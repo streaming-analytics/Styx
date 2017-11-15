@@ -1,2 +1,3 @@
 # Styx
-Streaming Analytics with Apache Flink
+A Streaming Analytics platform, built with Apache Flink and Kafka
+This framework support multiple use cases, such as...
