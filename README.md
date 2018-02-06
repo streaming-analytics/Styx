@@ -1,7 +1,6 @@
-Styx
-====
+![Styx logo](styx.gif "Styx logo")
 
-Styx is a STreaming AnalytYX engine that can be used for several use cases, for example:
+**Styx** is the STreaming AnalytYX engine that can be used for several use cases, for example:
 * producing actions or insights in real-time data
 * predictive maintenance on systems that produce event data
 * providing recommendations based on click events
