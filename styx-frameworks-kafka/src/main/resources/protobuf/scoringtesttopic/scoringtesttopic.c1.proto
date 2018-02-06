@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+message scoringtesttopic
+{
+	optional string ACC_NUM = 1;
+	optional string CARD_ID = 2;
+	optional string NOTIFICATION = 3;
+	optional string EVENT = 4;
+    optional string SCORE = 5;
+    optional string MESSAGE = 6;
+    optional string EVENT_TIME = 7;
+    optional string TIMESTAMPS = 8;
+    optional string trace_id = 9;
+}

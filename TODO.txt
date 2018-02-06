@@ -1,0 +1,30 @@
+Styx TODO
+
+- template job
+
+- Kafka 10 or 11?
+
+- scripts to:
+    - launch Cassandra (local / embedded)
+    - launch Kafka (local / embedded)
+    - launch Flink (local / embedded)
+
+- upgrade to sbt 1.0.0
+- upgrade to scala 2.12.4 (not possible in Flink 1.4.0)
+- use Coursier?
+
+- update versions
+
+- publish on Github
+
+- Codacy, Jenkins, etc.
+
+
+TODO-list
+---------
+* Remove topic string for the event classes (Events.scala) OR use it to select the output topics instead of the values in application.conf
+* Exception handling for the primary mapping functions of the CEP Engine, ML Engine, and postprocessor
+* Add command for inserting test data to Kafka bus
+* Make Machine Learning functions generic, indpendent of Shopping use case? To be discussed... another option is to deploy a separate Flink job for each use case.
+* make CEP Engine Function and ML Function into separate modules
+* make a separate module for each use case

@@ -1,0 +1,24 @@
+syntax = "proto2";
+
+message outputtesttopic
+{
+    optional string ACC_NUM = 1;
+    optional string CARD_ID = 2;
+    optional string id = 3;
+    optional string trace_id = 4;
+    optional string type = 5;
+    optional string created = 6;
+    optional string TIMESTAMPS = 7;
+    optional string MSG = 8;
+    optional string SCORE = 9;
+    message body {
+        optional string channel = 1;
+        optional string customer_id = 2;
+        optional string template_reference = 3;
+        optional string Address = 4;
+        message data {
+            optional string title = 1;
+            optional string message = 2;
+        }
+    }
+}
