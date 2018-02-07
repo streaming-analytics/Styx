@@ -1,5 +1,10 @@
 ![Styx logo](styx.gif "Styx logo")
 
+Travis-CI build status:
+[![Build Status](https://travis-ci.org/streaming-analytics/Styx.svg?branch=master)](https://travis-ci.org/streaming-analytics/Styx)
+
+[Codacy]
+
 **Styx** is the STreaming AnalytYX engine that can be used for several use cases, for example:
 * producing actions or insights in real-time data
 * predictive maintenance on systems that produce event data
