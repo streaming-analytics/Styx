@@ -22,14 +22,14 @@ trait KafkaConnection extends Logging {
   lazy val (kafkaProducer, kafkaConsumer): (StyxKafkaProducer, StyxKafkaConsumer) = (createProducer, createConsumer)
 
   def createProducer: StyxKafkaProducer = {
-    logger.info(s"Created producer for topic ${producerTopicDef.kafkaTopic} with group $consumerGroup")
+    logger.info(s"Creating producer for topic ${producerTopicDef.kafkaTopic} with group $consumerGroup")
     new StyxKafkaProducer(brokerAddressString, producerTopicDef)
   }
 
   def createConsumer: StyxKafkaConsumer = {
+    logger.info(s"Creating consumer for topic ${consumerTopicDef.kafkaTopic} with group $consumerGroup")
     val consumer = new StyxKafkaConsumer(brokerAddressString, consumerGroup, consumerTopicDef)
     consumer.seekToEnd()
-    logger.info(s"Created consumer for topic ${consumerTopicDef.kafkaTopic} with group $consumerGroup")
     consumer
   }
 }

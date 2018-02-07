@@ -37,8 +37,8 @@ class FlinkKafkaConsumerOffsetChecker(flinkWebAddress: String) extends Logging {
 
   def currentOffsetMetricName(cepName: String, topic: String, partition: Int): String = {
     val operatorName: String = s"Source: Source stream of $cepName from $topic"
-    val cleanedOperatorName = operatorName.replaceAll(" ", "_").replaceAll(":", "_")
-    s"0.$cleanedOperatorName.KafkaConsumer.current-offsets.$topic-$partition"
+    val cleanedOperatorName = operatorName.replaceAll(" ", "_").replaceAll(":", "_").take(80)
+    s"1.$cleanedOperatorName.KafkaConsumer.current-offsets.$topic-$partition"
   }
 
   def getKafkaConsumerJobVertexId(vertices: List[Any]): String = {

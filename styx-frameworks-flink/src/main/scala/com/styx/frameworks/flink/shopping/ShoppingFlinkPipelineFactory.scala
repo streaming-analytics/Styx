@@ -35,6 +35,9 @@ object ShoppingFlinkPipelineFactory extends Logging {
 
     val stream = sourceStream.name("CEP Engine source")
       .map(event => event.addTimeStamp("PRE_FIRST")).name("with ts")
+        .map{event =>
+        logger.info("Received transaction event")
+        event }
       .filter(_.accNum != 0).name("No creditcard")
     stream.addSink(new RawEventToRepositorySink(repositoryCreate)).name("Transaction amount storage")
 
@@ -56,6 +59,10 @@ object ShoppingFlinkPipelineFactory extends Logging {
     AsyncDataStream.unorderedWait(preppedSource, new LoadCriteriaFilters(profileRepositoryCreate, criteriaFilterRepositoryCreate), asyncRepoGenders.timeout.toMillis , TimeUnit.MILLISECONDS, asyncRepoGenders.capacity).name("DataLake queries")
       .map(new CriteriaFilterFunction()).name("Styx Filter Processor")
       .flatMap(_.toSeq).name("All criteria filters")
+        .map { event =>
+          logger.info("Received filtered event")
+          event
+        }
       .map(event => event.addTimeStamp("LAST")).name("with ts")
   }
 

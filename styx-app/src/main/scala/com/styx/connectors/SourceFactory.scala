@@ -2,6 +2,7 @@ package com.styx.connectors
 
 import java.util.Properties
 
+import com.styx.common.Logging
 import com.styx.support.datagen.KafkaEventFromStringDeserialize
 import com.styx.domain.events.{BaseKafkaEvent, TimedEvent}
 import com.styx.domain.kafka.TopicDef
@@ -16,7 +17,7 @@ import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 import scala.util.Try
 
-object SourceFactory {
+object SourceFactory extends Logging {
 
   def toStringList(topicDefs: Seq[TopicDef]): java.util.List[String] =
     topicDefs.map(_.kafkaTopic).toList.asJava
@@ -45,6 +46,9 @@ object SourceFactory {
     val deserializerName = deserializer.getClass.getSimpleName
     createKafkaEventStream(env, readTopicDef, kafkaProperties, jobName)
       .map(deserializer).name(deserializerName + "done")
+      .map {
+        event => logger.info("Received event")
+        event }
       .flatMap(_.toOption)
       .assignTimestampsAndWatermarks(new TimedEventWatermarkExtractor[T]()).name(deserializerName + "watermark")
   }

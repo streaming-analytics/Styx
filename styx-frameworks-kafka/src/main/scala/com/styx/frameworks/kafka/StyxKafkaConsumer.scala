@@ -7,7 +7,7 @@ import com.styx.domain.kafka.{TopicDef, Type}
 import com.styx.common.Logging
 import org.apache.kafka.clients.consumer.{ConsumerConfig, ConsumerRecord, KafkaConsumer}
 import org.apache.kafka.common.TopicPartition
-import org.apache.kafka.common.serialization.StringDeserializer
+import org.apache.kafka.common.serialization.{ByteArrayDeserializer, StringDeserializer}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -20,10 +20,12 @@ class StyxKafkaConsumer(brokerAddress: String, consumerGroup: String, topicDef: 
 
   val consumerProperties: Map[String, Object] = Map(
     ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG -> brokerAddress,
+    ConsumerConfig.GROUP_ID_CONFIG -> consumerGroup,
     ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG -> classOf[StringDeserializer],
-   // ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG -> classOf[KafkaMapDeserializer],
-    ConsumerConfig.GROUP_ID_CONFIG -> consumerGroup
-
+    ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG -> classOf[ByteArrayDeserializer]
+//    "key.serializer" -> "org.apache.kafka.common.serialization.StringSerializer",
+//    "value.deserializer" -> "org.apache.kafka.common.serialization.ByteArrayDeserializer",
+//    "value.serializer" -> "org.apache.kafka.common.serialization.ByteArraySerializer"
     // TODO
    // KafkaSerdesConfig.MAP_SCHEMA_NAME_CONFIG -> topicDef.messageNameInProtofile,
    // KafkaSerdesConfig.MAP_C1_SCHEMA_FILE_CONFIG -> topicDef.schemaFiles(Type.C1).fileLocation,

@@ -4,7 +4,7 @@ import com.styx.common.ConfigUtils
 import com.styx.domain.kafka.{TopicDef, TopicDefManager}
 import com.styx.shopping.StyxCepJob
 import com.typesafe.config.Config
-import org.scalatest.Suites
+import org.scalatest.{BeforeAndAfterAll, Suites}
 
 import scala.collection.JavaConverters._
 

@@ -33,9 +33,9 @@ trait EmbeddedFlink extends BeforeAndAfterAll {
 
   override def afterAll(): Unit = {
     super.afterAll()
-    //    JobStatusGateway.cancelJob(jobName) <- commented out to avoid throwing some exceptions at the end, enabling this would be useful, when there are more jobs deployed.
+    EmbeddedFlink.jobStatusGateway.cancelJob(jobName, 5 seconds)
+    EmbeddedFlink.stopCluster()
   }
-
 }
 
 object EmbeddedFlink extends Logging {
@@ -45,9 +45,7 @@ object EmbeddedFlink extends Logging {
   val clusterParallelism = 8
   val defaultParallelismForJobs = 2
 
-  //TestBaseUtils.DEFAULT_TIMEOUT = 50 seconds
-
-  val timeout: FiniteDuration = TestBaseUtils.DEFAULT_TIMEOUT
+  val timeout: FiniteDuration = 1000 seconds  //TestBaseUtils.DEFAULT_TIMEOUT
 
   lazy val cluster: LocalFlinkMiniCluster = startCluster()
 
@@ -67,7 +65,6 @@ object EmbeddedFlink extends Logging {
 
   private def leaderGateway(): ActorGateway = cluster.getLeaderGateway(timeout)
 
-  // currently not used, so we don't start a new server each time
   def stopCluster(): Unit = {
     TestStreamEnvironment.unsetAsContext()
     TestBaseUtils.stopCluster(cluster, timeout)
@@ -82,7 +79,7 @@ object EmbeddedFlink extends Logging {
     waitUntilJobIsRunning(jobName, cepName, inputTopic)
   }
 
-  def waitUntilJobIsRunning(jobName: String, cepName: String, inputTopic: String, pollingInterval: Duration = 200 milliseconds, timeout: FiniteDuration = timeout): Unit = {
+  def waitUntilJobIsRunning(jobName: String, cepName: String, inputTopic: String, pollingInterval: Duration = 500 milliseconds, timeout: FiniteDuration = timeout): Unit = {
     val startTime = System.currentTimeMillis()
     while (!jobStatusGateway.isJobRunning(jobName, cepName, inputTopic, timeout) && System.currentTimeMillis() - startTime < timeout.toMillis) {
       Thread.sleep(pollingInterval.toMillis)
