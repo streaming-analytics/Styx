@@ -150,7 +150,6 @@ class ExpressionParsingSpec extends FunSuite with Matchers {
       "Address" -> "Y",
       "Email" -> "Y",
       "Gender" -> "Y",
-      "Gender" -> 1001,
       "Count" -> 1001,
       "AverageMonthlyExpenditures" -> 3200,
       "AccountNumber" -> 26)

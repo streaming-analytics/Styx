@@ -60,7 +60,7 @@ case class DataSource(input: Map[String, Any]) {
   def fetch[T](key: String)(implicit tag: ClassTag[T]): Either[String, T] = {
     map.get(key.toLowerCase) match {
       case Some(v: T) => Right(v)
-      case Some(v) => Left(s"value provided for $key is not the right type")
+      case Some(_) => Left(s"value provided for $key is not the right type")
       case None => Left(s"the $key is not in the map")
     }
   }

@@ -56,13 +56,13 @@ class JitCriteriaParserSpec extends BaseSpec {
     "AND (Flag=='N' OR Id=='N' OR Address=='N' OR Email=='N' OR Gender=='N') " +
     "AND (Flag=='N' OR Id=='N' OR Address=='Y' OR Email=='Y' OR Gender=='N')" +
     "AND (Flag=='Y' OR Id=='Y' OR Address=='N' OR Email=='Y' OR Gender=='Y')" +
-    "AND Age>18" +
+    "AND Non_Existing_Key>18" +
     "AND Age<119" +
     "AND Count > 1000" +
     "AND AverageMonthlyExpenditures>3100"
 
   val incorrectTypeCriteria: String = "" +
-    "(Flag=='Y' OR Id=='N' OR Address=='Y' OR Email=='Y' OR Gender=='N') " +
+    "(Flag==21 OR Id=='N' OR Address=='Y' OR Email=='Y' OR Gender=='N') " +
     "AND (Flag=='N' OR Id=='N' OR Address=='N' OR Email=='N' OR Gender=='N') " +
     "AND (Flag=='N' OR Id=='N' OR Address=='Y' OR Email=='Y' OR Gender=='N')" +
     "AND (Flag=='Y' OR Id=='Y' OR Address=='N' OR Email=='Y' OR Gender=='Y')" +
@@ -75,9 +75,9 @@ class JitCriteriaParserSpec extends BaseSpec {
     filter(mockCustomer(1)).right.get should be(true)
   }
 
-  it should "display \"Failed to parse criteria at index 249.\" message when criteria can't be parsed" in {
+  it should "display \"Failed to parse criteria at index 139.\" message when criteria can't be parsed" in {
     val filter = new JitCriteriaParser().parseCustomerCriteria(unparseableCriteria)
-    filter(mockCustomer(1)).left.get should be(Seq("Failed to parse criteria at index 249."))
+    filter(mockCustomer(1)).left.get should be(Seq("Failed to parse criteria at index 139."))
   }
 
   it should "display the message saying why there is no match." in {
@@ -85,18 +85,13 @@ class JitCriteriaParserSpec extends BaseSpec {
     filter(mockFailCustomer(1,120)).left.get should be(Seq("age (equal to 120) is not less than 119"))
   }
 
-  it should "display the sequence of messages saying why there is no match." in {
-    val filter = new JitCriteriaParser().parseCustomerCriteria(criteria)
-    filter(mockFailCustomer(1,17,"536")).left.get should be(Seq("age (equal to 17) is not greater than 18", "Gender (equal to 536) is not greater than 1000"))
-  }
-
   it should "display a message saying the key does not exist." in {
     val filter = new JitCriteriaParser().parseCustomerCriteria(nonExistentKeyCriteria)
-    filter(mockFailCustomer(1,17,"536")).left.get should contain("the Age is not in the map")
+    filter(mockFailCustomer(1,19,"F")).left.get should contain("the non_existing_key is not in the map")
   }
 
-  it should "display a message saying that strings cannot be compared." in {
+  it should "display a message saying that a value is not in the correct type." in {
     val filter = new JitCriteriaParser().parseCustomerCriteria(incorrectTypeCriteria)
-    filter(mockFailCustomer(1,17,"536")).left.get should contain("Strings can't be compared with the '>'")
+    filter(mockFailCustomer(1,17)).left.get should contain("value provided for flag is not the right type")
   }
 }
