@@ -1,9 +1,9 @@
 package com.styx
 
 import com.styx.common.ConfigUtils
-import com.styx.jobs.ShoppingSpec
 import com.typesafe.config.Config
 import com.styx.domain.kafka.{TopicDef, TopicDefManager}
+import com.styx.runner.ShoppingSpec
 
 import scala.collection.JavaConverters._
 

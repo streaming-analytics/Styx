@@ -1,9 +1,8 @@
-package com.styx.frameworks.cassandra
+package com.styx.runner
 
-import com.styx.common.{FileReader, Logging}
 import com.styx.common.RetryHelper._
 import com.styx.common.UsingImplicit._
-import com.styx.common.ConfigUtils
+import com.styx.common.{ConfigUtils, FileReader, Logging}
 import com.styx.domain.{Balance, Customer}
 import com.styx.frameworks.cassandra.CqlBatchExecutor
 import com.styx.frameworks.cassandra.customerprofiles.{CassandraCustomerProfileRepository, CustomerProfileSerializer}

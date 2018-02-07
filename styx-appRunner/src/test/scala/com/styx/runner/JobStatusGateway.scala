@@ -1,4 +1,4 @@
-package com.styx
+package com.styx.runner
 
 import com.styx.common.Logging
 import org.apache.flink.runtime.client.JobStatusMessage

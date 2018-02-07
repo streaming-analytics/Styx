@@ -1,4 +1,4 @@
-package com.styx.shopping
+package com.styx.runner
 
 import com.styx.common.Logging
 import com.styx.support.datagen.RawEventProducer

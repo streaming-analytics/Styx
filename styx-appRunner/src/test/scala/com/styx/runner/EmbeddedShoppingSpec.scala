@@ -1,9 +1,8 @@
-package com.styx.jobs
+package com.styx.runner
 
-import com.styx.shopping.StyxCepJob
 import com.styx.common.ConfigUtils
 import com.styx.domain.kafka.{TopicDef, TopicDefManager}
-import com.styx.{EmbeddedFlink, LocalKafkaTopic, StyxEmbeddedKafka}
+import com.styx.shopping.StyxCepJob
 import com.typesafe.config.Config
 import org.scalatest.Suites
 

@@ -13,10 +13,8 @@ val easymockV = "3.5.1"
 val scapegoatV = "1.3.0"
 val scoverageV = "1.3.1"
 val flinkV = "1.4.0"
-val kafkaV = "0.10.0.1" // the version used by our kafka flink connectors, which is independent of our kafka producer (which uses api toolkit)
-val kafka11V = "0.11.0.2"
-val kafkaMainV = "0.10" // the main version, used by our kafka flink connectors
-val kafkaToolkitV = "1.10.0" // the kafka connector (outside of flink) used to put test data on the bus
+val kafkaV = "0.11.0.2"
+val flinkKafkaV = "0.10"
 val embeddedKafkaV = "1.0.0"
 val cryptoToolkitV = "01.02.00.005"
 val typesafeV = "1.3.2"
@@ -106,12 +104,6 @@ lazy val commonTestDependencies = Seq(
 
 lazy val itDependencies = commonTestDependencies.map(_ % "it")
 lazy val confidenceDependencies = commonTestDependencies.map(_ % "confidence")
-lazy val e2eTestDependencies = Seq(
-  "net.manub" %% "scalatest-embedded-kafka" % embeddedKafkaV % "test",
-  "org.apache.flink" %% "flink-test-utils" % flinkV % "test",
-  "org.apache.flink" %% "flink-runtime-web" % flinkV % "test",
-  "org.json4s" %% "json4s-jackson" % jacksonV % "test"
-)
 
 lazy val flink_dependencies = Seq(
   // we replace asm:asm with org.ow2.asm:asm
@@ -223,8 +215,8 @@ lazy val styxFrameworksKafka = (project in file("styx-frameworks-kafka")).depend
     libraryDependencies ++= itDependencies,
     libraryDependencies ++= {
       Seq(
-        "org.apache.kafka" %% "kafka" % kafka11V exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
-        "org.apache.kafka" % "kafka-clients" % kafka11V exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12")
+        "org.apache.kafka" %% "kafka" % kafkaV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
+        "org.apache.kafka" % "kafka-clients" % kafkaV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12")
       )
     }
   )
@@ -258,7 +250,7 @@ lazy val styxFlinkKafka = (project in file("styx-flink-kafka")).dependsOn(styxDo
     libraryDependencies ++= flink_dependencies.map(_ % "provided"),
     libraryDependencies ++= {
       Seq(
-        "org.apache.flink" %% ("flink-connector-kafka-" + kafkaMainV) % flinkV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12") exclude("asm", "asm") exclude("commons-logging", "commons-logging")
+        "org.apache.flink" %% ("flink-connector-kafka-" + flinkKafkaV) % flinkV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12") exclude("asm", "asm") exclude("commons-logging", "commons-logging")
       )
     }
   )
@@ -293,7 +285,7 @@ lazy val styxApp = (project in file("styx-app")).
     libraryDependencies ++= flink_dependencies.map(_ % "provided"),
     libraryDependencies ++= {
       Seq(
-        "org.apache.flink" %% ("flink-connector-kafka-" + kafkaMainV) % flinkV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12") exclude("asm", "asm") exclude("commons-logging", "commons-logging")
+        "org.apache.flink" %% ("flink-connector-kafka-" + flinkKafkaV) % flinkV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12") exclude("asm", "asm") exclude("commons-logging", "commons-logging")
       )
     },
     libraryDependencies ++= {
@@ -343,12 +335,15 @@ lazy val styxAppRunner = project.in(file("styx-appRunner")).dependsOn(styxApp % 
   settings(libraryDependencies ++= itDependencies).
   settings(
     libraryDependencies ++= flink_dependencies.map(_ % "compile"),
-    libraryDependencies ++= e2eTestDependencies,
     libraryDependencies ++= {
       Seq(
         "org.slf4j" % "log4j-over-slf4j" % slf4jV,
         "org.slf4j" % "jcl-over-slf4j" % slf4jV,
-        "ch.qos.logback" % "logback-classic" % logbackV
+        "ch.qos.logback" % "logback-classic" % logbackV,
+        "net.manub" %% "scalatest-embedded-kafka" % embeddedKafkaV % "test",
+        "org.apache.flink" %% "flink-test-utils" % flinkV % "test",
+        "org.apache.flink" %% "flink-runtime-web" % flinkV % "test",
+        "org.json4s" %% "json4s-jackson" % jacksonV % "test"
       )
     },
     fork in IntegrationTest := true,

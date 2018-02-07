@@ -1,12 +1,11 @@
-package com.styx.shopping
+package com.styx.runner
 
 import com.styx.common.Logging
-import com.styx.frameworks.cassandra.CustomerProfileReader
 
 object StyxDataLoader extends Logging {
 
   def main(args: Array[String]): Unit = {
-    val predefinedArgs = Array[String]() // ("--topic", "updatecardbalancetesttopic16", "--bootstrap.servers", "dnl-chsv-kafka-tst-1.europe.intranet:9092", "--zookeeper.connect", "dnl-chsv-zk-kafka-tst-1.europe.intranet:2181", "--group.id", "styx--consumergroup")
+    val predefinedArgs = Array[String]() // ("--topic", "updatecardbalancetesttopic16", "--bootstrap.servers", "localhost:9092", "--zookeeper.connect", "localhost:2181", "--group.id", "styx--consumergroup")
     logger.info("Starting import.")
     //    val loader = Future{
     //      CustomerProfileReader.main(predefinedArgs ++ args)

@@ -1,9 +1,9 @@
-package com.styx
+package com.styx.runner
 
 import com.styx.common.Logging
-import com.typesafe.config.Config
 import com.styx.domain.kafka.TopicDef
 import com.styx.frameworks.kafka.{StyxKafkaConsumer, StyxKafkaProducer}
+import com.typesafe.config.Config
 
 trait KafkaConnection extends Logging {
 
@@ -11,7 +11,7 @@ trait KafkaConnection extends Logging {
 
   def brokerAddress: Seq[String]
 
-  def brokerAddressString = brokerAddress.mkString(",")
+  def brokerAddressString: String = brokerAddress.mkString(",")
 
   def producerTopicDef: TopicDef
 
@@ -22,14 +22,14 @@ trait KafkaConnection extends Logging {
   lazy val (kafkaProducer, kafkaConsumer): (StyxKafkaProducer, StyxKafkaConsumer) = (createProducer, createConsumer)
 
   def createProducer: StyxKafkaProducer = {
-    logger.info(s"Created producer for topic ${producerTopicDef.kafkaTopic} with group ${consumerGroup}")
+    logger.info(s"Created producer for topic ${producerTopicDef.kafkaTopic} with group $consumerGroup")
     new StyxKafkaProducer(brokerAddressString, producerTopicDef)
   }
 
   def createConsumer: StyxKafkaConsumer = {
     val consumer = new StyxKafkaConsumer(brokerAddressString, consumerGroup, consumerTopicDef)
     consumer.seekToEnd()
-    logger.info(s"Created consumer for topic ${consumerTopicDef.kafkaTopic} with group ${consumerGroup}")
+    logger.info(s"Created consumer for topic ${consumerTopicDef.kafkaTopic} with group $consumerGroup")
     consumer
   }
 }

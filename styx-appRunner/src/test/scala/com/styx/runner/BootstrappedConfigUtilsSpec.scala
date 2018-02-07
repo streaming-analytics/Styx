@@ -1,6 +1,5 @@
-package com.styx.config
+package com.styx.runner
 
-import com.styx.common.ConfigUtils
 import com.styx.common.ConfigUtils
 import org.scalatest.{FunSpec, Matchers}
 

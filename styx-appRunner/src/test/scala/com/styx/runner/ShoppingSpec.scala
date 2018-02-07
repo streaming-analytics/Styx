@@ -1,11 +1,10 @@
-package com.styx.jobs
+package com.styx.runner
 
 import java.util
 import java.util.concurrent.Executors
 
-import com.styx.support.datagen.RawEventGenerator
-import com.styx.KafkaConnection
 import com.styx.common.Logging
+import com.styx.support.datagen.RawEventGenerator
 import com.typesafe.config.Config
 import org.joda.time.format.{DateTimeFormatter, ISODateTimeFormat}
 import org.joda.time.{DateTime, DateTimeZone}
@@ -82,4 +81,3 @@ trait ShoppingSpec extends FlatSpecLike with Matchers with Logging with KafkaCon
     withClue("additional events were triggered - this could be caused by sending the same data twice"){ Await.result(consumerRecords, 300 milliseconds).size shouldBe 0}
   }
 }
-

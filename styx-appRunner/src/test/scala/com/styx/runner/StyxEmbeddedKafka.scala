@@ -1,4 +1,4 @@
-package com.styx
+package com.styx.runner
 
 import net.manub.embeddedkafka.{EmbeddedKafka => LocalKafka}
 import org.scalatest.{BeforeAndAfterAll, Suite}
@@ -15,7 +15,7 @@ trait StyxEmbeddedKafka extends BeforeAndAfterAll with LocalKafka {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    //LocalKafka.start()
+    LocalKafka.start()
     createTopics()
     ensureKafkaIsReady()
   }

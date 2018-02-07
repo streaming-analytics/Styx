@@ -1,7 +1,8 @@
-package com.styx
+package com.styx.runner
 
 import java.util.concurrent.Executors
 
+import com.styx.StyxJob
 import com.styx.common.Logging
 import com.typesafe.config.Config
 import org.apache.flink.runtime.instance.ActorGateway
