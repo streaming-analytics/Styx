@@ -7,10 +7,10 @@ val logbackV = "1.2.3" // Our logging implementation
 val akkaV = "2.3.15"
 val jodatimeV = "2.9.9"
 val jodaConvertV = "2.0"
-val metricsV = "4.0.2"
+val dropMetricsV = "3.1.0"
 val scalaTestV = "3.0.5"
 val easymockV = "3.5.1"
-val scapegoatV = "1.3.0"
+val scapegoatV = "1.3.4"
 val scoverageV = "1.3.1"
 val flinkV = "1.4.1"
 val kafkaV = "0.11.0.2"
@@ -25,6 +25,10 @@ val catsV = "0.9.0"
 val jsrV = "3.0.2"
 val jacksonV = "3.5.3"
 val kryoV = "0.41"
+val cassandraV = "3.11.1"
+val cassandraDriverV = "3.3.2"
+val cassandraUnitV = "3.3.0.2"
+val codehaleMetricsV = "3.0.2"
 
 // Note to developers solving dependency issues:
 // If you want to know why sbt includes which dependencies, try running 'sbt "show update" ' (and pipe it to a file for easy searching)
@@ -67,8 +71,8 @@ lazy val overrideDependencies = Set(
   "joda-time" % "joda-time" % jodatimeV,
   "org.scala-lang.modules" %% "scala-xml" % "1.0.6",
   "com.google.code.findbugs" % "jsr305" % jsrV,
-  "io.dropwizard.metrics" % "metrics-graphite" % metricsV,
-  "io.dropwizard.metrics" % "metrics-core" % metricsV,
+  "io.dropwizard.metrics" % "metrics-graphite" % dropMetricsV,
+  "io.dropwizard.metrics" % "metrics-core" % dropMetricsV,
   "org.ow2.asm" % "asm-tree" % "5.0.3",
   "org.ow2.asm" % "asm-commons" % "5.0.3",
   "com.sksamuel.scapegoat" %% "scalac-scapegoat-plugin" % scapegoatV,
@@ -198,9 +202,11 @@ lazy val styxFrameworksCassandra = (project in file("styx-frameworks-cassandra")
     libraryDependencies ++=
       Seq(
         "com.typesafe" % "config" % typesafeV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
-        "com.datastax.cassandra" % "cassandra-driver-core" % "3.3.2" exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
-        "org.apache.cassandra" % "cassandra-all" % "3.11.1" exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
-        "io.reactivex" % "rxjava" % "1.1.6" exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12")
+        "com.datastax.cassandra" % "cassandra-driver-core" % cassandraDriverV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
+        "org.apache.cassandra" % "cassandra-all" % cassandraV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
+        "io.reactivex" % "rxjava" % "1.1.6" exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
+        "org.cassandraunit" % "cassandra-unit" % cassandraUnitV % "test" exclude("org.apache.cassandra", "cassandra-all"),
+        "com.codahale.metrics" % "metrics-core" % codehaleMetricsV % "test"
       )
   )
   .disablePlugins(AssemblyPlugin)
@@ -274,7 +280,7 @@ lazy val styxFrameworksOpenscoring = (project in file("styx-frameworks-openscori
 // ============================== BOOTSTRAP APP ===================================
 lazy val styxApp = (project in file("styx-app")).
   dependsOn(styxDomain, styxFlinkKafka, styxInterfaces,
-    styxFrameworksCassandra, styxFrameworksFlink % "compile->compile;test->test", styxFrameworksOpenscoring, styxSupportDataGen).
+    styxFrameworksCassandra % "compile->compile;test->test", styxFrameworksFlink % "compile->compile;test->test", styxFrameworksOpenscoring, styxSupportDataGen).
   settings(commonSettings: _*).
   configs(IntegrationTest).settings(Defaults.itSettings: _*).
   settings(libraryDependencies ++= itDependencies).
@@ -293,7 +299,7 @@ lazy val styxApp = (project in file("styx-app")).
         "org.slf4j" % "log4j-over-slf4j" % slf4jV,
         "org.slf4j" % "jcl-over-slf4j" % slf4jV,
         "ch.qos.logback" % "logback-classic" % logbackV,
-        "io.dropwizard.metrics" % "metrics-graphite" % metricsV,
+        "io.dropwizard.metrics" % "metrics-graphite" % dropMetricsV,
         "com.typesafe" % "config" % typesafeV
       )
     },

@@ -2,13 +2,14 @@ package com.styx.runner
 
 import com.styx.common.ConfigUtils
 import com.styx.domain.kafka.{TopicDef, TopicDefManager}
+import com.styx.frameworks.cassandra.EmbeddedCassandra
 import com.styx.shopping.StyxCepJob
 import com.typesafe.config.Config
 import org.scalatest.{BeforeAndAfterAll, Suites}
 
 import scala.collection.JavaConverters._
 
-class EmbeddedShoppingSpec extends Suites with ShoppingSpec with EmbeddedKafka with EmbeddedFlink {
+class EmbeddedShoppingSpec extends Suites with ShoppingSpec with EmbeddedKafka with EmbeddedFlink with EmbeddedCassandra {
 
   val jobToBeDeployed: StyxCepJob.type = StyxCepJob
 
