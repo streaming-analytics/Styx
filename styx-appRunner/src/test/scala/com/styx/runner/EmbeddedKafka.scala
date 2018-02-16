@@ -8,7 +8,7 @@ case class LocalKafkaTopic(topic: String,
                            partitions: Int = 1,
                            replicationFactor: Int = 1)
 
-trait StyxEmbeddedKafka extends BeforeAndAfterAll with LocalKafka {
+trait EmbeddedKafka extends BeforeAndAfterAll with LocalKafka {
   this: Suite =>
 
   def topicsForEmbeddedKafka: Seq[LocalKafkaTopic]

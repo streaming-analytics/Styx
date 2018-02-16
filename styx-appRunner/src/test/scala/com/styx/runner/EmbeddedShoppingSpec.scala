@@ -8,7 +8,7 @@ import org.scalatest.{BeforeAndAfterAll, Suites}
 
 import scala.collection.JavaConverters._
 
-class EmbeddedShoppingSpec extends Suites with ShoppingSpec with StyxEmbeddedKafka with EmbeddedFlink {
+class EmbeddedShoppingSpec extends Suites with ShoppingSpec with EmbeddedKafka with EmbeddedFlink {
 
   val jobToBeDeployed: StyxCepJob.type = StyxCepJob
 
