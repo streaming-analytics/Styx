@@ -1,18 +1,18 @@
 import com.sksamuel.scapegoat.sbt.ScapegoatSbtPlugin.autoImport._
 import sbt.Keys._
 
-val scalaV = "2.11.8"  // Flink requires Scala 2.11
+val scalaV = "2.11.12"  // Flink requires Scala 2.11
 val slf4jV = "1.7.25" // Our logging framework
 val logbackV = "1.2.3" // Our logging implementation
 val akkaV = "2.3.15"
 val jodatimeV = "2.9.9"
-val jodaConvertV = "2.0"
+val jodaConvertV = "2.0.1"
 val dropMetricsV = "3.1.0"
 val scalaTestV = "3.0.5"
 val easymockV = "3.5.1"
 val scapegoatV = "1.3.4"
 val scoverageV = "1.3.1"
-val flinkV = "1.4.1"
+val flinkV = "1.4.2"
 val kafkaV = "0.11.0.2"
 val flinkKafkaV = "0.11"
 val embeddedKafkaV = "1.0.0"
@@ -24,13 +24,18 @@ val fastparseV = "1.0.0"
 val catsV = "0.9.0"
 val jsrV = "3.0.2"
 val jacksonV = "3.5.3"
-val kryoV = "0.41"
 val cassandraV = "3.11.1"
 val cassandraDriverV = "3.3.2"
 val cassandraUnitV = "3.3.0.2"
 val codehaleMetricsV = "3.0.2"
+val kryoV = "2.24.0"
+val kryoSerV = "0.41"
+val asmV = "5.0.3"
+val nettyV = "3.10.0.Final"
+val guavaV = "19.0"
 
 // Note to developers solving dependency issues:
+// If you want to check possible new versions, run 'sbt dependencyUpdates'
 // If you want to know why sbt includes which dependencies, try running 'sbt "show update" ' (and pipe it to a file for easy searching)
 //   * Ideally, of each artifact there is only one version listed
 //   * If not, you can see which other dependency included it
@@ -41,8 +46,8 @@ val codehaleMetricsV = "3.0.2"
 //   * you can also exclude the transitive dependency , and then include your desired version as extra dependency
 // But be aware, by changing/overriding a version globally (overrideDependencies), you don't know of which libraries you are down/upgrading the version the transitive dependency
 //    which results in a risk if you upgrade the dependency.
-//   For example, we can override the kafka version (effectively pinning it to our desired version)
-//     but if we in the future upgrade the katka-toolkit version, we don't upgrade the kafka version, even if the kafka toolkit did (expect to) use that new version
+//   For example, we can override the kafka version (effectively pinning it to our desired version),
+//     but if we in the future upgrade the kafka-toolkit version, we don't upgrade the kafka version, even if the kafka toolkit did (expect to) use that new version.
 
 lazy val commonDependencies = Seq(
   "org.scalactic" %% "scalactic" % scalaTestV,
@@ -73,20 +78,20 @@ lazy val overrideDependencies = Set(
   "com.google.code.findbugs" % "jsr305" % jsrV,
   "io.dropwizard.metrics" % "metrics-graphite" % dropMetricsV,
   "io.dropwizard.metrics" % "metrics-core" % dropMetricsV,
-  "org.ow2.asm" % "asm-tree" % "5.0.3",
-  "org.ow2.asm" % "asm-commons" % "5.0.3",
+  "org.ow2.asm" % "asm-tree" % asmV,
+  "org.ow2.asm" % "asm-commons" % asmV,
   "com.sksamuel.scapegoat" %% "scalac-scapegoat-plugin" % scapegoatV,
-  "commons-logging" % "commons-logging" % "1.1.1" % "provided", // version 99-empty would be better but is unavailable in artifactory (as alternative of excluding commons logging everywhere, because slf4j contains classes of commons logging)
+  "commons-logging" % "commons-logging" % "1.1.1" % "provided", // version 99-empty would be better but is unavailable (as alternative of excluding commons logging everywhere, because slf4j contains classes of commons logging)
   "org.slf4j" % "slf4j-api" % slf4jV,
   "org.slf4j" % "log4j-over-slf4j" % slf4jV,
   "org.slf4j" % "jcl-over-slf5j" % slf4jV,
   "commons-beanutils" % "commons-beanutils-core" % "1.8.0",
-  "com.esotericsoftware.kryo" % "kryo" % "2.24.0",
-  "org.scala-lang" % "scala-reflect" % "2.11.8",
+  "com.esotericsoftware.kryo" % "kryo" % kryoV,
+  "org.scala-lang" % "scala-reflect" % scalaV,
   "org.apache.commons" % "commons-lang3" % "3.5",
   "org.apache.commons" % "commons-math3" % "3.6.1",
-  "com.google.guava" % "guava" % "19.0",
-  "io.netty" % "netty" % "3.10.0.Final",
+  "com.google.guava" % "guava" % guavaV,
+  "io.netty" % "netty" % nettyV,
   "org.apache.kafka" %% "kafka" % kafkaV,
   "org.apache.kafka" %% "kafka-clients" % kafkaV,
   "org.scalatest" %% "scalatest" % scalaTestV,
@@ -239,7 +244,7 @@ lazy val styxFrameworksFlink = (project in file("styx-frameworks-flink")).depend
     libraryDependencies ++= itDependencies,
     libraryDependencies ++= flink_dependencies.map(_ % "provided"),
     libraryDependencies ++= {
-      Seq("de.javakaffee" % "kryo-serializers" % kryoV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12") exclude("com.esotericsoftware", "kryo"))
+      Seq("de.javakaffee" % "kryo-serializers" % kryoSerV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12") exclude("com.esotericsoftware", "kryo"))
     }
   )
   .disablePlugins(AssemblyPlugin)
