@@ -4,7 +4,8 @@ import com.typesafe.config.Config
 import com.styx.common.ConfigUtils
 
 /**
-  * This job runs all processes in one environment, in 1 long pipeline without intermediate kafka busses (except the datagen).
+  * This job runs all processes in one environment, in 1 long pipeline without intermediate Kafka buses (except the datagen).
+  * The data is loaded from a datagen job (not from Kafka).
   *
   * There are also independent jobs available if each one needs to run in its own environment/job
   */

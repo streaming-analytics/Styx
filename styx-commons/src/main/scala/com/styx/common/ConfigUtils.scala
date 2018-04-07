@@ -2,9 +2,7 @@ package com.styx.common
 
 import java.io.File
 import java.util.Properties
-
 import com.typesafe.config.{Config, ConfigFactory, ConfigRenderOptions, ConfigValueType}
-
 import scala.collection.JavaConverters._
 
 object ConfigUtils extends Logging {
@@ -50,7 +48,7 @@ object ConfigUtils extends Logging {
       .withFallback(ConfigFactory.load())
       .getConfig("styx")
     logger.info(s"Finished loading config from application.conf and from file ${referenceConfigFilename.getOrElse("(no filename provided)")} and with overrides: $overrides")
-    logger.info(s"MERGED, FINAL config values:\n${config.root().render(ConfigRenderOptions.defaults().setOriginComments(false))}")
+    logger.debug(s"MERGED, FINAL config values:\n${config.root().render(ConfigRenderOptions.defaults().setOriginComments(false))}")
     config
   }
 

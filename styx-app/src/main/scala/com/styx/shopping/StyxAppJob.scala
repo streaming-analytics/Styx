@@ -5,9 +5,9 @@ import com.styx.common.ConfigUtils
 import com.typesafe.config.Config
 
 /**
-  * This job runs all processes in one environment.
+  * This job runs all processes in one environment. All events are stored on Kafka and then loaded again in the next step.
   *
-  * There are also independent jobs available if each one needs to run in its own environment/job
+  * There are also independent jobs available if each one needs to run in its own environment/job.
   */
 object StyxAppJob extends StyxJob {
 

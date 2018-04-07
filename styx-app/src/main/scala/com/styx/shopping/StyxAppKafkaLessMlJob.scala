@@ -4,9 +4,7 @@ import com.typesafe.config.Config
 import com.styx.common.ConfigUtils
 
 /**
-  * This job runs all processes in one environment, in 1 long pipeline without intermediate kafka busses (except the datagen).
-  *
-  * There are also independent jobs available if each one needs to run in its own environment/job
+  * This is a separate ML job with a random stream of business events as its source
   */
 object StyxAppKafkaLessMlJob {
 
@@ -14,13 +12,12 @@ object StyxAppKafkaLessMlJob {
     val config: Config = ConfigUtils.loadConfig(args)
 
     val jobFactory = ConfigBasedJobBuilderDefaults.datagenJobWithDefaultsGivenConfig(Some(config))
-    for(rawSource <- jobFactory.randomBusinessEvents();
-        scoresStream <- jobFactory.businessEventsToNotificationEvents(rawSource);
-      ccStream <- jobFactory.notificationEventsToCcEvents(scoresStream);
+    for (rawSource <- jobFactory.randomBusinessEvents();
+         scoresStream <- jobFactory.businessEventsToNotificationEvents(rawSource);
+         ccStream <- jobFactory.notificationEventsToCcEvents(scoresStream);
          _ <- jobFactory.ccEventsToKafka(ccStream)
-    ){
+    ) {
     }
     jobFactory.execute()
-
   }
 }

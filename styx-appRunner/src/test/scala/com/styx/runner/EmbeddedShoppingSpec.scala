@@ -44,4 +44,12 @@ class EmbeddedShoppingSpec extends Suites with ShoppingSpec with EmbeddedKafka w
   override def producerTopicDef: TopicDef = topicDefinitionMap(rawEventTopicName)
 
   override def consumerTopicDef: TopicDef = topicDefinitionMap(businessEventTopicName)
+
+//  "Embedded kafka" should "put a message on the bus" in {
+//    val p = createProducer
+//
+//    val event = new java.util.HashMap[String, AnyRef](1)
+//    event.put("key", "value")
+//    p.send(event)
+//  }
 }

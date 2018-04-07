@@ -19,6 +19,11 @@ Styx TODO
 
 - Codacy, Jenkins, etc.
 
+- styx.com -> styx.ai
+
+- rename NotificationEvent to IntermediateEvent
+- rename CcEvent to NotificationEvent
+- rename BusinessEvent to PatternEvent
 
 TODO-list
 ---------
@@ -28,3 +33,16 @@ TODO-list
 * Make Machine Learning functions generic, indpendent of Shopping use case? To be discussed... another option is to deploy a separate Flink job for each use case.
 * make CEP Engine Function and ML Function into separate modules
 * make a separate module for each use case
+
+Clean-up / Simplify
+-------------------
+- styx-commons
+- styx-app
+- styx-appRunner
+V styx-frameworks-flink
+V styx-frameworks-kafka
+V styx-frameworks-cassandra
+V styx-frameworks-openscoring
+? styx-deployment-validator
+? styx-support-db
+? styx-support-pos
