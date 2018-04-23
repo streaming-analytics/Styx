@@ -215,6 +215,12 @@
             <h2>Parallelism</h2>
             <ul>
                 <li>To get high throughput, we have to process the events in parallel</li>
+            </ul>
+            <pre><code data-trim>
+                taskmanager.numberOfTaskSlots: 4
+                parallelism.default: 2
+            </code></pre>
+            <ul>
                 <li>The <i>keyBy</i> function distributes our stream into parallel parts</li>
             </ul>
             <pre><code data-trim>
@@ -243,14 +249,14 @@
                 <li class="fragment" data-fragment-index="4">
                     In processing infinite streams, we usually look at a time <i>window</i>:
                     <ul>
-                        <li>Sliding window</li> <!-- e.g. looking back at the last hour -->
-                        <li>Tumbling window</li> <!-- e.g. processing data per day -->
-                        <li>Session window</li> <!-- based on event data -->
-                        <li>Global window</li> <!-- e.g. per key -->
+                        <li>Sliding window</li> <!-- e.g. looking back at the last hour, continuous updating average of system activity -->
+                        <li>Tumbling window</li> <!-- e.g. processing data per day to get a financial report -->
+                        <li>Session window</li> <!-- based on event data, e.g. users logged in and out -->
+                        <li>Global window</li> <!-- per key, e.g. check _all_ user activity -->
                     </ul>
                 </li>
-                <!-- TODO: examples -->
                 <!-- Windows can be very large (e.g. weeks) and thereby gather a lot of state -->
+                <!-- At the end of a window, a function (Window operator) is called -->
                 <!-- Lesson: always consider event time, make sure that your event data has it -->
             </ul>
         </section>
@@ -275,6 +281,10 @@
             <pre><code data-trim>
                 env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
             </code></pre>
+            <!-- in order to run in event time, the program needs to either use sources that directly define event time
+             for the data and emit watermarks themselves, or the program must inject a Timestamp Assigner & Watermark Generator after the sources.
+              Those functions describe how to access the event timestamps, and what degree of out-of-orderness the event stream exhibits. -->
+
         </section>
 
         <section>
@@ -282,6 +292,13 @@
             <ul>
                 <!-- IF eventTime < watermark THEN Ignore ELSE Process -->
                 <li>Watermarks are timestamps that trigger the computation of the window</li>
+                <li>They are generated after the sources by injecting a <i>Timestamp Assigner & Watermark Generator</i></li>
+            </ul>
+            <pre><code data-trim>
+                createKafkaEventStream(env, readTopicDef, kafkaProperties, jobName)
+                    .assignTimestampsAndWatermarks(new TimedEventWatermarkExtractor[T]())
+            </code></pre>
+            <ul class="fragment">
                 <li>By default, any event that reaches the processor later than the watermark, but with an event time that should belong to the previous window, is ignored</li>
                 <li>Flink also allows recomputation of the window by increasing the <i>allowedLateness</i></li>
                 <!-- the default allowedLateness is 0 -->
@@ -302,19 +319,10 @@
                   )
                 }
 
-                // TODO: show event time interval for taxi events?
+                // TODO
+                createKafkaEventStream(env, readTopicDef, kafkaProperties, jobName)
+                  .assignTimestampsAndWatermarks(new TimedEventWatermarkExtractor[T]())
 
-            </code></pre>
-        </section>
-
-        <section>
-            <h2>Complex Event Processing</h2>
-
-        </section>
-
-        <section>
-            <h2>Complex Event Processing</h2>
-            <pre><code data-trim>
             </code></pre>
         </section>
 
@@ -333,7 +341,7 @@
 # The backend that will be used to store operator state checkpoints if
 # checkpointing is enabled.
 #
-# Supported backends: jobmanager, filesystem, rocksdb, <class-name-of-factory>
+# Supported backends: jobmanager, filesystem, rocksdb, class-name-of-factory
 #
 state.backend: filesystem
             </code></pre>
@@ -342,7 +350,16 @@ state.backend: filesystem
         <section>
             <h2>Exactly-once processing</h2>
             <ul>
-
+                <li>An event has three possible statuses:</li>
+                <ul>
+                    <li>Not processed (in cache on the Kafka bus)</li>
+                    <li>In transit (picked up by Flink)</li>
+                    <li>Processed (handled by Flink)</li>
+                </ul>
+                <li>Kafka knows for each consumer which data has been read: <i>offset</i></li>
+                <li>Flink supports <i>checkpointing</i> and replay in case of failures</li>
+                <li>This combination guarantees that an event goes through the system <i>exactly once</i></li>
+                <li class="fragment">Other options for semantics are <b>at-least-once</b> and <b>at-most-once</b> processing</li>
             </ul>
         </section>
 
