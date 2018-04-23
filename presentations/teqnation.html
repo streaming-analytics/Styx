@@ -52,20 +52,22 @@
 
 		<section>
 			<h2>Agenda</h2>
-			<ul>
-				Streaming Analytics: why it is difficult
-				<li>Architecture of Styx</li>
-				Explain demo use case: Twitter sentiment analysis? Log parsing? Shopping?
-				1. CEP
-				typical streaming problems, and their solution: late events, watermarks, state management etc.
-				CEP demo and source code
-				2. ML
-				Creating a model
-				Training the model with a dataset of historical events (tweets)
-				Using the model in a stream: scoring
-				ML demo and source code
-				Wrap-up
-			</ul>
+			<ol>
+                <li>Streaming Analytics use cases</li>
+                <li>Architecture of Styx</li>
+                <li>Technology</li>
+                <li>Deep dive:</li>
+                <li><ul>
+                    <li>Kafka-Flink connection</li>
+                    <li>Parallelism</li>
+                    <li>Event Time, Windows, and Watermarks</li>
+                    <li>CEP</li>
+                    <li>State</li>
+                    <li>Exactly-once Processing</li>
+                    <li>Model scoring</li>
+                </ul></li>
+                <li>Wrap-up</li>
+			</ol>
 		</section>
 
         <section>
@@ -147,189 +149,210 @@
         <section>
             <h2>Technology</h2>
             <!-- At ING, we created a framework called Styx. It is now open source. We made some tehcnology choices: -->
-            Styx uses the best open source frameworks:
+            Styx uses a selection of source frameworks
             <ul>
-                <li>Kafka</li>
-                <li>Flink</li>
-                <li>Cassandra</li>
-                <li>Openscoring.io</li>
+                <li>Data stream storage: <b>Kafka</b></li>
+                <li>Stream processing: <b>Flink</b></li>
+                <li>State management and Cache: <b>Cassandra</b></li>
+                <li>Model scoring: <b>PMML</b> and <b>Openscoring.io</b></li>
+            </ul>
+            <!-- All: scalable, mature, fault-tolerant, fast -->
+        </section>
+
+        <section>
+            <h2>Deep dive part 1</h2>
+            <img src="img/architecture.png" class="stretch">
+        </section>
+
+        <section>
+            <h2>Flink-Kafka integration</h2>
+            The <i>FlinkKafkaConsumer</i> and <i>FlinkKafkaProducer</i> classes provide easy connectivity
+            <!-- Simplified code: serializing data and making a DataStream of 'raw' Kafka events -->
+            <pre><code data-trim>
+                    def createKafkaEventStream(env: StreamExecutionEnvironment):
+                          DataStream[RawEvent] = {
+
+                    // create KeyedDeserializationSchema
+                    val readSchema = KafkaSchemaFactory.createKeyedDeserializer
+                            (readTopicDef, rawEventFromPayload)
+
+                    // consume events
+                    val rawEventSource = new FlinkKafkaConsumer010[BaseKafkaEvent]
+                            (toStringList(readTopicDef), readSchema, props)
+
+                    // create source
+                    env.addSource(rawEventSource)
+                      .filter(_.isSuccess)   // if decrypting from kafka succeeded
+                      .flatMap(_.toOption)
+                  }
+            </code></pre>
+        </section>
+
+        <section>
+            <h2>Parallelism</h2>
+            <ul>
+                <li>To get high throughput, we have to process the events in parallel</li>
+                <li>The <i>keyBy</i> function distributes our stream into parallel parts</li>
+            </ul>
+            <pre><code data-trim>
+                  def createCepPipeline(sourceStream: DataStream[RawEvent]):
+                        DataStream[BusinessEvent] = {
+                    val windowStream = sourceStream
+                      .keyBy(_.customerId)                // create parallelism
+                      .window(GlobalWindows.create())     // window per key
+                      .apply(new WindowResultFunction())  // logic: pattern match
+                      .map(event => event.addTimeStamp("window"))
+                  }
+            </code></pre>
+        </section>
+
+        <section>
+            <h2>Event time and Windows</h2>
+            <ul>
+                <li>Events occur at certain time <span class="fragment fade-in" data-fragment-index="2">
+                    <b>=> event time</b></span></li>
+                <li class="fragment" data-fragment-index="1">... but arrive a little while later <span class="fragment fade-in" data-fragment-index="2">
+                    <b>=> processing time</b></span></li>
+
+                <!-- a window is a bucket of time -->
+                <li class="fragment" data-fragment-index="3">
+                    Events can reach us out-of-order; by looking at the event time this doesn't matter</li>
+                <li class="fragment" data-fragment-index="4">
+                    In processing infinite streams, we usually look at a time <i>window</i>:
+                    <ul>
+                        <li>Sliding window</li> <!-- e.g. looking back at the last hour -->
+                        <li>Tumbling window</li> <!-- e.g. processing data per day -->
+                        <li>Session window</li> <!-- based on event data -->
+                        <li>Global window</li> <!-- e.g. per key -->
+                    </ul>
+                </li>
+                <!-- TODO: examples -->
+                <!-- Windows can be very large (e.g. weeks) and thereby gather a lot of state -->
+                <!-- Lesson: always consider event time, make sure that your event data has it -->
             </ul>
         </section>
 
         <section>
+            <h2>Event time and Windows</h2>
+            <img>
+        </section>
 
-            <section>
-                <h2>Things to deal with in streaming analytics solutions</h2>
-                <h3>... and code examples!</h3>
-            </section>
+        <section>
+            <h2>Event time and Windows</h2>
+            <ul>
+                <li>We have to tell Flink what data field contains the event timestamps</li>
+            </ul>
+            <pre><code data-trim>
+                TODO
+            </code></pre>
 
-            <section>
-                <h2>Getting data from Kafka</h2>
-                <pre><code data-trim>
-                </code></pre>
-            </section>
+            <ul>
+                <li>Then, we set the event time characterics of the environment</li>
+            </ul>
+            <pre><code data-trim>
+                env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
+            </code></pre>
+        </section>
 
-            <section>
-                <h2>Parallelism</h2>
-                <ul>
-                    <li>To get high throughput, we have to process the events in parallel</li>
-                    <li>The <i>keyBy</i> function distributes our stream into parallel parts</li>
-                </ul>
-                <pre><code data-trim>
-                      def createPipeline(sourceStream: DataStream[RawEvent]):
-                            DataStream[BusinessEvent] = {
-                        val windowStream = sourceStream
-                          .keyBy(_.customerId)
-                          .window(GlobalWindows.create()) // 1 window per key
-                          .apply(new WindowResultFunction()).name("Pattern match")
-                          .map(event => event.addTimeStamp("window")).name("with ts")
-                      }
-                </code></pre>
-            </section>
+        <section>
+            <h2>Watermarks</h2>
+            <ul>
+                <!-- IF eventTime < watermark THEN Ignore ELSE Process -->
+                <li>Watermarks are timestamps that trigger the computation of the window</li>
+                <li>By default, any event that reaches the processor later than the watermark, but with an event time that should belong to the previous window, is ignored</li>
+                <li>Flink also allows recomputation of the window by increasing the <i>allowedLateness</i></li>
+                <!-- the default allowedLateness is 0 -->
+                <li>There are <i>periodic</i> (timer-based) and <i>punctuated</i> (stream-based) watermarks</li>
+                <!-- example: tumbling window of one hour, watermark is 1 minute. af 14:02 an event comes in with an event time of 13:59 -->
+            </ul>
+        </section>
 
-            <section>
-                <h2>Event time and Windows</h2>
-                <ul>
-                    <li>Events occur at certain time <span class="fragment fade-in" data-fragment-index="2">
-                        <b>=> event time</b></span></li>
-                    <li class="fragment" data-fragment-index="1">... but arrive a little while later <span class="fragment fade-in" data-fragment-index="2">
-                        <b>=> processing time</b></span></li>
-
-                    <!-- a window is a bucket of time -->
-                    <li class="fragment" data-fragment-index="3">
-                        Events can reach us out-of-order; by looking at the event time this doesn't matter</li>
-                    <li class="fragment" data-fragment-index="4">
-                        In processing infinite streams, we usually look at a time <i>window</i>:
-                        <ul>
-                            <li>Sliding window</li>
-                            <li>Tumbling window</li>
-                            <li>Session window</li>
-                        </ul>
-                    </li>
-                    <!-- Windows can be very large (e.g. weeks) and thereby gather a lot of state -->
-                    <!-- Lesson: always consider event time, make sure that your event data has it -->
-                </ul>
-            </section>
-
-            <section>
-                <h2>Event time and Windows</h2>
-                <img>
-            </section>
-
-            <section>
-                <h2>Event time and Windows</h2>
-                <ul>
-                    <li>We have to tell Flink what data field contains the event timestamps</li>
-                </ul>
-                <pre><code data-trim>
-                    env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
-                </code></pre>
-            </section>
-
-            <section>
-                <h2>Watermarks</h2>
-                <ul>
-                    <!-- IF eventTime < watermark THEN Ignore ELSE Process -->
-                    <li>Watermarks are timestamps that trigger the computation of the window</li>
-                    <li>By default, any event that reaches the processor later than the watermark, but with an event time that should belong to the previous window, is ignored</li>
-                    <li>Flink also allows recomputation of the window by increasing the <i>allowedLateness</i></li>
-                    <!-- the default allowedLateness is 0 -->
-                    <li>There are <i>periodic</i> (timer-based) and <i>punctuated</i> (stream-based) watermarks</li>
-                </ul>
-            </section>
-
-            <section>
-                <h2>Watermarks</h2>
-                <pre><code data-trim>
-                    def setWatermarks(env: StreamExecutionEnvironment, styxConfig: Config): Unit = {
-                      // ...
-                      styxConfig.optLong("flink.autowatermark-interval").foreach(
-                        autowatermarkInterval => {
-                          env.getConfig.setAutoWatermarkInterval(autowatermarkInterval)
-                        }
-                      )
+        <section>
+            <h2>Watermarks</h2>
+            <pre><code data-trim>
+                def setWatermarks(env: StreamExecutionEnvironment, styxConfig: Config): Unit = {
+                  // ...
+                  styxConfig.optLong("flink.autowatermark-interval").foreach(
+                    autowatermarkInterval => {
+                      env.getConfig.setAutoWatermarkInterval(autowatermarkInterval)
                     }
+                  )
+                }
 
-                </code></pre>
-            </section>
+                // TODO: show event time interval for taxi events?
 
-            <section>
-                <h2>Complex Event Processing</h2>
+            </code></pre>
+        </section>
 
-            </section>
+        <section>
+            <h2>Complex Event Processing</h2>
 
-            <section>
-                <h2>Complex Event Processing</h2>
-                <pre><code data-trim>
-                </code></pre>
-            </section>
+        </section>
 
-            <section>
-                <h2>Savepointing and checkpointing</h2>
-                <ul>
-                    <li>A <i>checkpoint</i> is a periodic dump to file of the in-memory state</li>
-                    <li>A <i>savepoint</i> is a manual checkpoint</li>
-                    <li>The state dumps can be used for recovery, replay, or for backup/lineage</li>
-                </ul>
-            </section>
+        <section>
+            <h2>Complex Event Processing</h2>
+            <pre><code data-trim>
+            </code></pre>
+        </section>
 
-            <section>
-                <h2>Exactly-once processing</h2>
-                <ul>
+        <section>
+            <h2>Savepointing and checkpointing</h2>
+            <ul>
+                <li>A <i>checkpoint</i> is a periodic dump to file of the in-memory state</li>
+                <li>A <i>savepoint</i> is a manual checkpoint</li>
+                <li>The state dumps can be used for recovery, replay, or for backup/lineage</li>
+            </ul>
+        </section>
 
-                </ul>
-            </section>
+        <section>
+            <h2>Exactly-once processing</h2>
+            <ul>
 
-            <section>
-                <h2>Exactly-once processing</h2>
-                <pre><code data-trim>
-                </code></pre>
-            </section>
+            </ul>
+        </section>
 
-            <section>
-                <h2>Model scoring</h2>
-                <ul>
-                    <li>After a <i>keyBy</i> operator, we can <i>flatMap</i> over the events</li>
-                    <li>or apply functions that process the data in the windows</li>
-                    <li>For example:
-                        <ol>
-                            <li>enrich each business event by getting more data</li>
-                            <li>score a machine learning model on each enriched event</li>
-                            <li>write the outcome to a new event / output stream</li>
-                        </ol>
-                    </li>
-            </section>
+        <section>
+            <h2>Exactly-once processing</h2>
+            <pre><code data-trim>
+            </code></pre>
+        </section>
 
-            <section>
-                <h2>Model scoring</h2>
-                <pre><code data-trim>
-                def score(event: RichBusinessEvent, pmmlModel: PmmlModel): Double = {
-                    val arguments = new util.LinkedHashMap[FieldName, FieldValue]
+        <section>
+            <h2>Model scoring</h2>
+            <ul>
+                <li>After a <i>keyBy</i> operator, we can <i>flatMap</i> over the events</li>
+                <li>or apply functions that process the data in the windows</li>
+                <li>For example:
+                    <ol>
+                        <li>enrich each business event by getting more data</li>
+                        <li>score a machine learning model on each enriched event</li>
+                        <li>write the outcome to a new event / output stream</li>
+                    </ol>
+                </li>
+        </section>
 
-                    for (inputField: InputField <- pmmlModel.getInputFields.asScala) {
-                        arguments.put(inputField.getField.getName,
-                            inputField.prepare(customer.all(fieldName.getValue)))
-                    }
+        <section>
+            <h2>Model scoring</h2>
+            <pre><code data-trim>
+            def score(event: RichBusinessEvent, pmmlModel: PmmlModel): Double = {
+                val arguments = new util.LinkedHashMap[FieldName, FieldValue]
 
-                    // return the notification with a relevancy score
-                    val results = pmmlModel.evaluate(arguments)
+                for (inputField: InputField <- pmmlModel.getInputFields.asScala) {
+                    arguments.put(inputField.getField.getName,
+                        inputField.prepare(customer.all(fieldName.getValue)))
+                }
 
-                    pmmlModel.getTargetFields.asScala.headOption match {
-                        case Some(targetField) =>
-                            val targetFieldValue = results.get(targetField.getName)
-                        case _ => throw new Exception("No valid target")
-                        }
+                // return the notification with a relevancy score
+                val results = pmmlModel.evaluate(arguments)
+
+                pmmlModel.getTargetFields.asScala.headOption match {
+                    case Some(targetField) =>
+                        val targetFieldValue = results.get(targetField.getName)
+                    case _ => throw new Exception("No valid target")
                     }
                 }
-                </code></pre>
-
-            </section>
-
-            <section>
-                <h2>Source code structure</h2>
-                <!-- Decoupled modules, clean architecture, inversion of control -->
-
-            </section>
+            }
+            </code></pre>
 
         </section>
 
