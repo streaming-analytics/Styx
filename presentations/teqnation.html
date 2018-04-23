@@ -44,7 +44,7 @@
 			<h1>Streaming Analytics</h1>
             <h3>How to get fast predictions from real-time data</h3>
             <h3>with Flink, Kafka, and Cassandra</h3>
-            <img src="img/teqnation.png" class="stretch" />
+            <img src="img/TeqnationLogo.png" class="stretch" />
 			<p>
 				<small>Bas Geerdink | <i>TeqNation</i> | 26-04-2018</small>
 			</p>
@@ -162,6 +162,29 @@
         <section>
             <h2>Deep dive part 1</h2>
             <img src="img/architecture.png" class="stretch">
+        </section>
+
+        <section>
+            <h2>Set up a Flink application</h2>
+            <ul>
+                <li>A Flink job is a Java/Scala application</li>
+                <li>Jobs can be deployed to a running Flink cluster</li>
+                <li>Maven dependencies: </li>
+            </ul>
+            <pre><code data-trim>
+                <dependency>
+                  <groupId>org.apache.flink</groupId>
+                  <artifactId>flink-scala_2.11</artifactId>
+                  <version>1.4.2</version>
+                  <scope>provided</scope>
+                </dependency>
+                <dependency>
+                  <groupId>org.apache.flink</groupId>
+                  <artifactId>flink-streaming-scala_2.11</artifactId>
+                  <version>1.4.2</version>
+                  <scope>provided</scope>
+                </dependency>
+            </code></pre>
         </section>
 
         <section>
@@ -302,6 +325,18 @@
                 <li>A <i>savepoint</i> is a manual checkpoint</li>
                 <li>The state dumps can be used for recovery, replay, or for backup/lineage</li>
             </ul>
+            <pre><code data-trim>
+#==============================================================================
+# Streaming state checkpointing
+#==============================================================================
+
+# The backend that will be used to store operator state checkpoints if
+# checkpointing is enabled.
+#
+# Supported backends: jobmanager, filesystem, rocksdb, <class-name-of-factory>
+#
+state.backend: filesystem
+            </code></pre>
         </section>
 
         <section>
