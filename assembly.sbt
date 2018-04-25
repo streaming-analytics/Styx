@@ -8,5 +8,5 @@ assemblyMergeStrategy in assembly := {
   case n if n.startsWith("application.conf") => MergeStrategy.concat
   case n if n.endsWith(".conf") => MergeStrategy.concat
   case meta(_) => MergeStrategy.discard
-  case x => MergeStrategy.first
+  case _ => MergeStrategy.first
 }

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+  <PMML xmlns="http://www.dmg.org/PMML-4_3" version="4.3">
+	<Header>
+		<Application name="JPMML-SkLearn" version="1.1.4"/>
+		<Timestamp>2017-01-11T13:52:59Z</Timestamp>
+	</Header>
+	<MiningBuildTask>
+		<Extension name="mapper" value="repr(mapper)">DataFrameMapper(default=False,
+        features=[(['age', 'balance', 'monthly_expenses', 'monthly_income'], None), ('segment', LabelEncoder()), ('Y', None)],
+        sparse=False)</Extension>
+		<Extension name="estimator" value="repr(estimator)">LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
+          intercept_scaling=1, max_iter=100, multi_class='ovr', n_jobs=1,
+          penalty='l2', random_state=None, solver='liblinear', tol=0.0001,
+          verbose=0, warm_start=False)</Extension>
+	</MiningBuildTask>
+	<DataDictionary>
+		<DataField name="age" optype="continuous" dataType="double"/>
+		<DataField name="balance" optype="continuous" dataType="double"/>
+		<DataField name="monthly_expenses" optype="continuous" dataType="double"/>
+		<DataField name="monthly_income" optype="continuous" dataType="double"/>
+		<DataField name="segment" optype="categorical" dataType="string">
+			<Value value="HI"/>
+			<Value value="LO"/>
+			<Value value="ME"/>
+		</DataField>
+	</DataDictionary>
+	<TransformationDictionary>
+		<DefineFunction name="logit" optype="continuous" dataType="double">
+			<ParameterField name="value" optype="continuous" dataType="double"/>
+			<Apply function="/">
+				<Constant dataType="double">1</Constant>
+				<Apply function="+">
+					<Constant dataType="double">1</Constant>
+					<Apply function="exp">
+						<Apply function="*">
+							<Constant dataType="double">-1</Constant>
+							<FieldRef field="value"/>
+						</Apply>
+					</Apply>
+				</Apply>
+			</Apply>
+		</DefineFunction>
+	</TransformationDictionary>
+	<MiningModel functionName="classification">
+		<MiningSchema>...</MiningSchema>
+		<Segmentation multipleModelMethod="modelChain">
+			<Segment id="1">...</Segment>
+			<Segment id="2">
+				<True/>
+				<RegressionModel functionName="classification" normalizationMethod="softmax">
+					<MiningSchema>
+						<MiningField name="Y" usageType="target"/>
+						<MiningField name="decisionFunction_1"/>
+					</MiningSchema>
+					<Output>
+						<OutputField name="probability_0" optype="continuous" dataType="double" feature="probability" value="0"/>
+						<OutputField name="probability_1" optype="continuous" dataType="double" feature="probability" value="1"/>
+					</Output>
+					<RegressionTable intercept="0.0" targetCategory="0">
+						<NumericPredictor name="decisionFunction_1" coefficient="-1.0"/>
+					</RegressionTable>
+					<RegressionTable intercept="0.0" targetCategory="1"/>
+				</RegressionModel>
+			</Segment>
+		</Segmentation>
+	</MiningModel>
+</PMML>
