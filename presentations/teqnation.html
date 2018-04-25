@@ -72,50 +72,43 @@
         <section>
             <h2>Use Cases</h2>
             <small>
-                <!-- Speaker notes: explain customer journeys -->
                 <table>
                     <thead><tr>
+                        <th>Sector</th>
                         <th>Data source</th>
-                        <th>Pattern</th>
-                        <th>Prediction</th>
+                        <th>Pattern + prediction</th>
                         <th>Notification</th>
                     </tr></thead>
                     <tbody>
                         <tr>
-                            <td>Logs</td>
-                            <td>CPU utilization</td>
-                            <td>System failure</td>
-                            <td>Alert to sys admin</td>
-                        </tr>
-                        <tr>
-                            <td>Tweets</td>
-                            <td>Sentiment analysis</td>
-                            <td>Too much negativity</td>
-                            <td>Social media team</td>
-                        </tr>
-                        <tr>
-                            <td>Debit card depreciation</td>
-                            <td>Shopping</td>
-                            <td>No more credit</td>
+                            <td>Finance</td>
+                            <td>Debit card transactions</td>
+                            <td>Running out of credit</td>
                             <td>Actionable insight</td>
                         </tr>
                         <tr>
+                            <td>Finance</td>
                             <td>Payment data</td>
                             <td>Fraud detection</td>
-                            <td>Illegal operation</td>
                             <td>Block money transfer</td>
                         </tr>
                         <tr>
-                            <td>URL visits / click events</td>
-                            <td>Filling in forms</td>
-                            <td>Customer is stuck</td>
-                            <td>Helpdesk call</td>
+                            <td>Insurance</td>
+                            <td>Page visits</td>
+                            <td>Customer is stuck in form</td>
+                            <td>Chat window</td>
                         </tr>
                         <tr>
+                            <td>Healthcare</td>
                             <td>Patient data</td>
-                            <td>Rising heart beat</td>
                             <td>Heart failure</td>
-                            <td>Alert to doctor</td>
+                            <td>Alert doctor</td>
+                        </tr>
+                        <tr>
+                            <td>Retail</td>
+                            <td>Tweets</td>
+                            <td>Sentiment analysis</td>
+                            <td>Social media response</td>
                         </tr>
                         <tr>
                             <td>Traffic</td>
@@ -123,9 +116,20 @@
                             <td>Traffic jam</td>
                             <td>Update route info</td>
                         </tr>
+                        <tr>
+                            <td>Manufacturing</td>
+                            <td>Logs</td>
+                            <td>System failure</td>
+                            <td>Alert to sys admin</td>
+                        </tr>
                     </tbody>
                 </table>
             </small>
+            <aside class="notes">
+                Mention: IoT, increase of data, importance of analytics, relation with big data.<br>
+                Definition: streaming is a type of data processing engine that is designed with infinite data sets in mind (Tyler Akidau).<br>
+                Real-time doesn't really exist; so, rather call it <i>fast data</i> processing.
+            </aside>
         </section>
 
         <section>
@@ -133,11 +137,16 @@
             The common pattern in all these scenarios:
             <ol>
                 <li>Detect pattern by combining data (CEP)</li>
-                <!-- Digital Signal Processing -->
                 <li>Determine relevancy (ML)</li>
-                <!-- Artificial Intelligence -->
                 <li>Determine action/notification</li>
             </ol>
+            <aside class="notes">
+                One event doesn't mean much, only in combination with other event it gets useful.<br>
+                Also: a lot of events can be ignored!
+                This is a different pattern than <i>messages</i> in microservices, where each message has to be handled by (at least one) consumer.<br>
+                CEP: Digital Signal Processing <br>
+                ML + feedback loop: AI (self-learning and adapting)
+            </aside>
         </section>
 
 		<section>
@@ -147,7 +156,6 @@
 
         <section>
             <h2>Technology</h2>
-            <!-- At ING, we created a framework called Styx. It is now open source. We made some tehcnology choices: -->
             Styx uses a selection of source frameworks
             <ul>
                 <li>Data stream storage: <b>Kafka</b></li>
@@ -155,7 +163,9 @@
                 <li>State management and Cache: <b>Cassandra</b></li>
                 <li>Model scoring: <b>PMML</b> and <b>Openscoring.io</b></li>
             </ul>
-            <!-- All: scalable, mature, fault-tolerant, fast -->
+            <aside class="notes">
+                All: scalable, mature, fault-tolerant, fast.
+            </aside>
         </section>
 
         <section>
@@ -192,22 +202,22 @@
                 The <i>FlinkKafkaConsumer</i> and <i>FlinkKafkaProducer</i> classes provide easy connectivity
                 <!-- Simplified code: serializing data and making a DataStream of 'raw' Kafka events -->
                 <pre><code data-trim>
-                        def createKafkaEventStream(env: StreamExecutionEnvironment):
-                              DataStream[RawEvent] = {
+def createKafkaEventStream(env: StreamExecutionEnvironment):
+      DataStream[RawEvent] = {
 
-                        // create KeyedDeserializationSchema
-                        val readSchema = KafkaSchemaFactory.createKeyedDeserializer
-                                (readTopicDef, rawEventFromPayload)
+    // create KeyedDeserializationSchema
+    val readSchema = KafkaSchemaFactory.createKeyedDeserializer
+            (readTopicDef, rawEventFromPayload)
 
-                        // consume events
-                        val rawEventSource = new FlinkKafkaConsumer010[BaseKafkaEvent]
-                                (toStringList(readTopicDef), readSchema, props)
+    // consume events
+    val rawEventSource = new FlinkKafkaConsumer010[BaseKafkaEvent]
+            (toStringList(readTopicDef), readSchema, props)
 
-                        // create source
-                        env.addSource(rawEventSource)
-                          .filter(_.isSuccess)   // if decrypting from kafka succeeded
-                          .flatMap(_.toOption)
-                      }
+    // create source
+    env.addSource(rawEventSource)
+      .filter(_.isSuccess)   // if decrypting from kafka succeeded
+      .flatMap(_.toOption)
+}
                 </code></pre>
             </section>
 
@@ -243,19 +253,17 @@
                     <li>... but arrive a little while later <span class="fragment fade-in" data-fragment-index="1">
                         <b>=> processing time</b></span></li>
                 </ul>
-                <img src="img/EventTime.png" class="stretch" />
-                <ul>
-                    <li class="fragment fade-in" data-fragment-index="2">
-                        Events can reach us <i>out-of-order</i>; by looking at the event time we can still detect the original order</li>
-                </ul>
+                <img src="img/EventTime.png" class="fragment" data-fragment-index="2"/>
+                <aside class="notes">
+                    Events can reach us <i>out-of-order</i>; by looking at the event time we can still detect the original order</li>
+                </aside>
             </section>
 
             <section>
                 <h2>Windows</h2>
                 <ul>
-                    <!-- a window is a bucket of time -->
                     <li>In processing infinite streams, we usually look at a time <i>window</i> </li>
-                    <li>A windows can be considered as a bucket of time</li>
+                    <li>A windows can be considered as a <i>bucket of time</i></li>
                     <li class="fragment" data-fragment-index="1">There are different types of windows:
                         <ul class="fragment" data-fragment-index="1">
                             <li>Sliding window</li> <!-- e.g. looking back at the last hour, continuous updating average of system activity -->
@@ -264,9 +272,10 @@
                             <li>Global window</li> <!-- per key, e.g. check _all_ user activity -->
                         </ul>
                     </li>
-                    <!-- Windows can be very large (e.g. weeks) and thereby gather a lot of state -->
-                    <!-- At the end of a window, a function (Window operator) is called -->
-                    <!-- Lesson: always consider event time, make sure that your event data has it -->
+                    <aside class="notes">
+                         Windows can be very large (e.g. weeks) and thereby gather a lot of state.
+                         At the end of a window, a function (Window operator) is called.
+                    </aside>
                 </ul>
             </section>
 
@@ -276,30 +285,8 @@
             </section>
 
             <section>
-                <h2>Event time and Windows</h2>
-                <ul>
-                    <li>We have to tell Flink what data field contains the event timestamps</li>
-                </ul>
-                <pre><code data-trim>
-                    TODO
-                </code></pre>
-
-                <ul>
-                    <li>Then, we set the event time characterics of the environment</li>
-                </ul>
-                <pre><code data-trim>
-                    env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
-                </code></pre>
-                <!-- in order to run in event time, the program needs to either use sources that directly define event time
-                 for the data and emit watermarks themselves, or the program must inject a Timestamp Assigner & Watermark Generator after the sources.
-                  Those functions describe how to access the event timestamps, and what degree of out-of-orderness the event stream exhibits. -->
-
-            </section>
-
-            <section>
                 <h2>Watermarks</h2>
                 <ul>
-                    <!-- IF eventTime < watermark THEN Ignore ELSE Process -->
                     <li>Watermarks are timestamps that trigger the computation of the window</li>
                     <li>They are generated at a time that allows a bit of slack for late events</li>
                     <li>In Flink, we inject a <i>Timestamp Assigner & Watermark Generator</i></li>
@@ -308,13 +295,23 @@
                     createKafkaEventStream(env, readTopicDef, kafkaProperties, jobName)
                         .assignTimestampsAndWatermarks(new TimedEventWatermarkExtractor[T]())
                 </code></pre>
-                <ul class="fragment">
+                <aside class="notes">
+                    How do we know when to calculate a window? Check the watermarks.<br>
+                    (other triggers are also possible: processing time, punctuations (data-dependent).<br>
+                    IF eventTime < watermark THEN Ignore ELSE Process
+                </aside>
+            </section>
+
+            <section>
+                <h2>Late Events</h2>
+                <ul>
                     <li>By default, any event that reaches the processor later than the watermark, but with an event time that should belong to the previous window, is ignored</li>
-                    <li>Flink also allows recomputation of the window by increasing the <i>allowedLateness</i></li>
-                    <!-- the default allowedLateness is 0 -->
+                    <li>Flink also allows recomputation of the window by increasing the <i>allowedLateness</i> (default: 0)</li>
                     <li>There are <i>periodic</i> (timer-based) and <i>punctuated</i> (stream-based) watermarks</li>
-                    <!-- example: tumbling window of one hour, watermark is 1 minute. af 14:02 an event comes in with an event time of 13:59 -->
                 </ul>
+                <aside class="notes">
+                    Example: tumbling window of one hour, watermark is 1 minute. af 14:02 an event comes in with an event time of 13:59
+                </aside>
             </section>
 
             <section>
@@ -322,8 +319,7 @@
                 <ul>
                     <li>A <i>checkpoint</i> is a periodic dump to file of the in-memory state</li>
                     <li>A <i>savepoint</i> is a manual checkpoint</li>
-                    <li>The state dumps can be used for recovery, replay, or for backup/lineage</li>
-                    <!-- Trade-off: size of state vs speed of recovery/updates -->
+                    <li>The state dumps can be used for recovery and replay</li>
                 </ul>
                 <pre><code data-trim>
     #=====================================================================
@@ -337,14 +333,9 @@
     #
     state.backend: filesystem
                 </code></pre>
-            </section>
-
-        </section>
-
-        <section>
-            <section>
-                <h2>Deep dive part 2</h2>
-                <img src="img/part2.png" class="stretch"/>
+                <aside class="notes">
+                    Trade-off: size of state vs speed of recovery/updates
+                </aside>
             </section>
 
             <section>
@@ -357,17 +348,20 @@
                         <li>Processed (handled by Flink)</li>
                     </ul>
                     <li>Kafka knows for each consumer which data has been read: <i>offset</i></li>
-                    <li>Flink supports <i>checkpointing</i> and replay in case of failures</li>
+                    <li>Flink has checkpoints that allow to replay the stream in case of failures</li>
                     <li>This combination guarantees that an event goes through the system <i>exactly once</i></li>
-                    <li>Other options for semantics are <b>at-least-once</b> and <b>at-most-once</b> processing</li>
                 </ul>
+                <aside class="notes">
+                    Other options for semantics are <b>at-least-once</b> and <b>at-most-once</b> processing
+                </aside>
             </section>
 
+        </section>
+
+        <section>
             <section>
-                <h2>Exactly-once processing</h2>
-                <pre><code data-trim>
-                    TODO
-                </code></pre>
+                <h2>Deep dive part 2</h2>
+                <img src="img/part2.png" class="stretch"/>
             </section>
 
             <section>
@@ -381,12 +375,7 @@ from sklearn2pmml import sklearn2pmml
 
 events_df = pandas.read_csv("events.csv")
 
-pipeline = PMMLPipeline([
-	("mapper", DataFrameMapper([
-		(["age", "balance", "expenses", "income", "segment"])
-	])),
-	("classifier", LogisticRegression())
-])
+pipeline = PMMLPipeline(...)
 pipeline.fit(events_df, events_df["notifications"])
 
 sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
@@ -440,10 +429,10 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
         <section>
             <h2>Wrap-up</h2>
             <ul>
-                <li>There are plenty of streaming analytics use cases, in any business domain.</li>
+                <li>There are plenty of streaming analytics use cases, in any business domain</li>
                 <li>The common pattern is: CEP --> ML --> Notification</li>
                 <li>Pick the right tools for the job; Kafka and Flink are amongst the best</li>
-                <li>Be aware of typical 'fast data' problems: latency, late events, state management, distribution</li>
+                <li>Be aware of typical 'fast data' problems: late events, state management, distribution</li>
                 <li>Styx is a proven open source framework for Streaming Analytics that is flexible and scalable</li>
             </ul>
         </section>
@@ -469,7 +458,6 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
 <script src="js/reveal.js"></script>
 
 <script>
-
 			// More info https://github.com/hakimel/reveal.js#configuration
 			Reveal.initialize({
 				controls: true,
@@ -491,7 +479,7 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
 				]
 			});
 
-		</script>
+</script>
 
 </body>
 </html>
