@@ -54,8 +54,7 @@
 			<h2>Agenda</h2>
 			<ol>
                 <li>Streaming Analytics use cases</li>
-                <li>Architecture of Styx</li>
-                <li>Technology</li>
+                <li>Architecture and Technology</li>
                 <li>Deep dive:
                     <ul>
                         <li>Kafka-Flink connection</li>
@@ -138,7 +137,7 @@
             <ol>
                 <li>Detect pattern by combining data (CEP)</li>
                 <li>Determine relevancy (ML)</li>
-                <li>Determine action/notification</li>
+                <li>Produce notification</li>
             </ol>
             <aside class="notes">
                 One event doesn't mean much, only in combination with other event it gets useful.<br>
@@ -160,7 +159,7 @@
             <ul>
                 <li>Data stream storage: <b>Kafka</b></li>
                 <li>Stream processing: <b>Flink</b></li>
-                <li>Persisting rules, models, and configuration: <b>Cassandra</b></li>
+                <li>Persisting rules, models, and config: <b>Cassandra</b></li>
                 <li>Model scoring: <b>PMML</b> and <b>Openscoring.io</b></li>
             </ul>
             <aside class="notes">
@@ -237,7 +236,7 @@ def createKafkaEventStream(env: StreamExecutionEnvironment):
                       def createCepPipeline(sourceStream: DataStream[RawEvent]):
                             DataStream[BusinessEvent] = {
                         val windowStream = sourceStream
-                          .keyBy(_.customerId)                // create parallelism
+                          .keyBy(_.customerId.head)           // create parallelism: 0..9
                           .window(GlobalWindows.create())     // window per key
                           .apply(new WindowResultFunction())  // logic: pattern match
                           .map(event => event.addTimeStamp("window"))
@@ -336,14 +335,17 @@ def createKafkaEventStream(env: StreamExecutionEnvironment):
                     class TimedEventWatermarkExtractor
                        extends AssignerWithPeriodicWatermarks[TimedEvent]() {
 
-                        // set event time to 'eventTime' field in events
-                        override def extractTimestamp(element: T,
+                        // specify the event time
+                        override def extractTimestamp(element: TimedEvent,
                                         previousElementTimestamp: Long): Long = {
+                            // set event time to 'eventTime' field in events
                             element.eventTime.getMillis
                         }
 
-                        // one second delay for processing of window
+                        // this method is called to emit a watermark every time the
+                        // ExecutionConfig.setAutoWatermarkInterval(...) interval occurs
                         override def getCurrentWatermark: Watermark = {
+                            // one second delay for processing of window
                             new Watermark(System.currentTimeMillis() - 1000)
                       }
                     }
@@ -353,49 +355,25 @@ def createKafkaEventStream(env: StreamExecutionEnvironment):
             <section>
                 <h2>Flink CEP</h2>
                 <pre><code data-trim>
-val cep = Pattern.begin[ClickEvent]("start").within(Time.seconds(1))
+val cep = Pattern.begin[ClickEvent]("Page1").within(Time.seconds(1))
     .where( event =>
         event match {
           case c: ClickEvent => c.processStep.equals(steps(0))
           case _ => false
         })
-    .next("Step2")
+    .next("Page2")  // check that Page1 is followed by Page2
       .where(event => event match {
           case c: ClickEvent => c.processStep.equals(steps(1))
           case _ => false
         })
-    .next("Step3")
+    .next("Page3")  // check that Page2 is followed by Page3
     .where(event => event match {
         case c: ClickEvent => c.processStep.equals(steps(2))
         case _ => false
       })
-    .within(Time.seconds(30))
+    .within(Time.minutes(30))  // no match = pattern detected
   }
                 </code></pre>
-            </section>
-
-            <section>
-                <h2>Savepointing and checkpointing</h2>
-                <ul>
-                    <li>A <i>checkpoint</i> is a periodic dump to file of the in-memory state</li>
-                    <li>A <i>savepoint</i> is a manual checkpoint</li>
-                    <li>The state dumps can be used for recovery and replay</li>
-                </ul>
-                <pre><code data-trim>
-    #=====================================================================
-    # Streaming state checkpointing
-    #=====================================================================
-
-    # The backend that will be used to store operator state checkpoints if
-    # checkpointing is enabled.
-    #
-    # Supported backends: jobmanager, filesystem, rocksdb
-    #
-    state.backend: filesystem
-                </code></pre>
-                <aside class="notes">
-                    Trade-off: size of state vs speed of recovery/updates
-                </aside>
             </section>
 
             <section>
@@ -404,15 +382,37 @@ val cep = Pattern.begin[ClickEvent]("start").within(Time.seconds(1))
                     <li>An event has three possible statuses:</li>
                     <ul>
                         <li>Not processed (in cache on the Kafka bus)</li>
-                        <li>In transit (picked up by Flink)</li>
+                        <li>In transit (picked up by Flink, in a window) = <i>state</i></li>
                         <li>Processed (handled by Flink)</li>
                     </ul>
-                    <li>Kafka knows for each consumer which data has been read: <i>offset</i></li>
-                    <li>Flink has checkpoints that allow to replay the stream in case of failures</li>
-                    <li>This combination guarantees that an event goes through the system <i>exactly once</i></li>
+                    <li class="fragment" data-fragment-index="1">Kafka knows for each consumer which data has been read: <i>offset</i></li>
+                    <li class="fragment" data-fragment-index="1">Flink has <i>checkpoints</i> that allow to replay the stream in case of failures</li>
+                    <li class="fragment" data-fragment-index="1">This combination guarantees that an event goes through the system <i>exactly once</i></li>
                 </ul>
                 <aside class="notes">
                     Other options for semantics are <b>at-least-once</b> and <b>at-most-once</b> processing
+                </aside>
+            </section>
+
+            <section>
+                <h2>Savepointing and checkpointing</h2>
+                <ul>
+                    <li>A <i>checkpoint</i> is a periodic dump to file of the in-memory state</li>
+                </ul>
+                <pre><code data-trim>
+   env.enableCheckPointing(10000)  // checkpoint every 10 seconds
+                </code></pre>
+                <ul>
+                    <li>A <i>savepoint</i> is a manual checkpoint</li>
+                    <li>The state dumps can be used for recovery and replay</li>
+                </ul>
+                <pre><code data-trim>
+    # Supported backends: jobmanager, filesystem, rocksdb
+    #
+    state.backend: filesystem
+                </code></pre>
+                <aside class="notes">
+                    Trade-off: size of state vs speed of recovery/updates
                 </aside>
             </section>
 
