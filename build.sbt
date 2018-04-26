@@ -1,4 +1,3 @@
-import com.sksamuel.scapegoat.sbt.ScapegoatSbtPlugin.autoImport._
 import sbt.Keys._
 
 val scalaV = "2.11.12"  // Flink requires Scala 2.11
@@ -10,8 +9,7 @@ val jodaConvertV = "2.0.1"
 val dropMetricsV = "3.1.0"
 val scalaTestV = "3.0.5"
 val easymockV = "3.5.1"
-val scapegoatV = "1.3.4"
-val scoverageV = "1.3.1"
+//val scoverageV = "1.3.1"
 val flinkV = "1.4.2"
 val kafkaV = "0.11.0.2"
 val flinkKafkaV = "0.11"
@@ -19,7 +17,6 @@ val embeddedKafkaV = "1.0.0"
 val cryptoToolkitV = "01.02.00.005"
 val typesafeV = "1.3.2"
 val jpmmlV = "1.3.11"
-val slf4jGrizzleV = "1.3.2"
 val fastparseV = "1.0.0"
 val catsV = "0.9.0"
 val jsrV = "3.0.2"
@@ -31,7 +28,7 @@ val codehaleMetricsV = "3.0.2"
 val kryoV = "2.24.0"
 val kryoSerV = "0.41"
 val asmV = "5.0.3"
-val nettyV = "3.10.0.Final"
+val nettyV = "4.0.47.Final"
 val guavaV = "19.0"
 
 // Note to developers solving dependency issues:
@@ -60,16 +57,13 @@ lazy val commonDependencies = Seq(
   "org.slf4j" % "slf4j-api" % slf4jV,
   "com.google.code.findbugs" % "jsr305" % jsrV,
   "com.lihaoyi" %% "fastparse" % fastparseV,
-  "org.typelevel" %% "cats" % catsV,
-  "org.scoverage" %% "scalac-scoverage-runtime" % scoverageV,
-  "org.scoverage" %% "scalac-scoverage-plugin" % scoverageV
+  "org.typelevel" %% "cats" % catsV
+  //"org.scoverage" %% "scalac-scoverage-runtime" % scoverageV,
+  //"org.scoverage" %% "scalac-scoverage-plugin" % scoverageV
 )
 
 // Set the common Scala version
 scalaVersion in ThisBuild := scalaV
-
-// Defines the scapegoat version used by the sbt-scapegoat plugin
-scapegoatVersion := scapegoatV
 
 // Some version conflict resolutions:
 lazy val overrideDependencies = Set(
@@ -80,11 +74,10 @@ lazy val overrideDependencies = Set(
   "io.dropwizard.metrics" % "metrics-core" % dropMetricsV,
   "org.ow2.asm" % "asm-tree" % asmV,
   "org.ow2.asm" % "asm-commons" % asmV,
-  "com.sksamuel.scapegoat" %% "scalac-scapegoat-plugin" % scapegoatV,
-  "commons-logging" % "commons-logging" % "1.1.1" % "provided", // version 99-empty would be better but is unavailable (as alternative of excluding commons logging everywhere, because slf4j contains classes of commons logging)
+  //"commons-logging" % "commons-logging" % "1.1.1" % "provided", // version 99-empty would be better but is unavailable (as alternative of excluding commons logging everywhere, because slf4j contains classes of commons logging)
   "org.slf4j" % "slf4j-api" % slf4jV,
   "org.slf4j" % "log4j-over-slf4j" % slf4jV,
-  "org.slf4j" % "jcl-over-slf5j" % slf4jV,
+  "org.slf4j" % "jcl-over-slf4j" % slf4jV,
   "commons-beanutils" % "commons-beanutils-core" % "1.8.0",
   "com.esotericsoftware.kryo" % "kryo" % kryoV,
   "org.scala-lang" % "scala-reflect" % scalaV,
@@ -92,11 +85,13 @@ lazy val overrideDependencies = Set(
   "org.apache.commons" % "commons-math3" % "3.6.1",
   "com.google.guava" % "guava" % guavaV,
   "io.netty" % "netty" % nettyV,
+  "io.netty" % "netty-common" % nettyV,
+  "io.netty" % "netty-all" % nettyV,
   "org.apache.kafka" %% "kafka" % kafkaV,
   "org.apache.kafka" %% "kafka-clients" % kafkaV,
-  "org.scalatest" %% "scalatest" % scalaTestV,
-  "org.scoverage" %% "scalac-scoverage-runtime" % scoverageV,
-  "org.scoverage" %% "scalac-scoverage-plugin" % scoverageV
+  "org.scalatest" %% "scalatest" % scalaTestV
+ // "org.scoverage" %% "scalac-scoverage-runtime" % scoverageV,
+ // "org.scoverage" %% "scalac-scoverage-plugin" % scoverageV
 )
 
 // Needed at global scope to let integration test classes depend on the modules test classes.
@@ -128,7 +123,6 @@ libraryDependencies ~= {
 
 lazy val commonSettings = Seq(
   organization := "com.styx",
-  scapegoatVersion := scapegoatV,
   crossPaths := false,
   scalacOptions := Seq(
     "-encoding", "utf8",
@@ -147,11 +141,11 @@ lazy val commonSettings = Seq(
 lazy val confidenceSettings = inConfig(ConfidenceTest)(Defaults.testSettings)
 
 // Code coverage settings
-lazy val scoverageSettings = Seq(
-  scoverage.ScoverageKeys.coverageOutputHTML := true,
-  scoverage.ScoverageKeys.coverageMinimum := 34,
-  scoverage.ScoverageKeys.coverageFailOnMinimum := true
-)
+//lazy val scoverageSettings = Seq(
+//  scoverage.ScoverageKeys.coverageOutputHTML := true,
+//  scoverage.ScoverageKeys.coverageMinimum := 34,
+//  scoverage.ScoverageKeys.coverageFailOnMinimum := true
+//)
 
 // ============================== COMMONS ===================================
 // The styxCommons module contains common scala utils, which do NOT depend on flink / kafka / cassandra or other platforms
@@ -406,7 +400,7 @@ lazy val root = (project in file(".")).
     styxApp
   ).
   settings(commonSettings: _*).
-  settings(scoverageSettings: _*).
+  //settings(scoverageSettings: _*).
   settings(
     name := "styx",
     artifactName := {

@@ -163,6 +163,7 @@
                 <li>Model scoring: <b>PMML</b> and <b>Openscoring.io</b></li>
             </ul>
             <aside class="notes">
+                Considerations: latency, throughput, connectivity/integration.<br>
                 All: scalable, mature, fault-tolerant, fast.
             </aside>
         </section>
@@ -302,6 +303,7 @@ def createKafkaEventStream(env: StreamExecutionEnvironment):
                 </ul>
                 <aside class="notes">
                     How do we know when to calculate a window?<br>
+                    Watermarks assert that all earlier events have (probably) arrived<br>
                     (other triggers are also possible: processing time, punctuations (data-dependent).<br>
                     IF eventTime < watermark THEN Ignore ELSE Process
                 </aside>
@@ -349,30 +351,6 @@ def createKafkaEventStream(env: StreamExecutionEnvironment):
                             new Watermark(System.currentTimeMillis() - 1000)
                       }
                     }
-                </code></pre>
-            </section>
-
-            <section>
-                <h2>Flink CEP</h2>
-                <pre><code data-trim>
-val cep = Pattern.begin[ClickEvent]("Page1").within(Time.seconds(1))
-    .where( event =>
-        event match {
-          case c: ClickEvent => c.processStep.equals(steps(0))
-          case _ => false
-        })
-    .next("Page2")  // check that Page1 is followed by Page2
-      .where(event => event match {
-          case c: ClickEvent => c.processStep.equals(steps(1))
-          case _ => false
-        })
-    .next("Page3")  // check that Page2 is followed by Page3
-    .where(event => event match {
-        case c: ClickEvent => c.processStep.equals(steps(2))
-        case _ => false
-      })
-    .within(Time.minutes(30))  // no match = pattern detected
-  }
                 </code></pre>
             </section>
 
@@ -436,6 +414,30 @@ val cep = Pattern.begin[ClickEvent]("Page1").within(Time.seconds(1))
                 </code></pre>
             </section>
 
+            <section>
+                <h2>Flink CEP</h2>
+                <pre><code data-trim>
+val cep = Pattern.begin[ClickEvent]("Page1").within(Time.seconds(1))
+    .where( event =>
+        event match {
+          case c: ClickEvent => c.processStep.equals(steps(0))
+          case _ => false
+        })
+    .next("Page2")  // check that Page1 is followed by Page2
+      .where(event => event match {
+          case c: ClickEvent => c.processStep.equals(steps(1))
+          case _ => false
+        })
+    .next("Page3")  // check that Page2 is followed by Page3
+    .where(event => event match {
+        case c: ClickEvent => c.processStep.equals(steps(2))
+        case _ => false
+      })
+    .within(Time.minutes(30))  // no match = pattern detected
+  }
+                </code></pre>
+            </section>
+
         </section>
 
         <section>
@@ -460,6 +462,9 @@ pipeline.fit(events_df, events_df["notifications"])
 
 sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
                 </code></pre>
+                <aside class="notes">
+                    PMML is the glue between data science and data engineering.
+                </aside>
             </section>
 
             <section>
@@ -470,7 +475,7 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
             <section>
                 <h2>Model scoring</h2>
                 <ul>
-                    <li>By doing a <i>flatMap</i> over the events we can apply functions that process the data in the windows</li>
+                    <li>By doing a <i>flatMap</i> over the events we can apply functions that process/transform the data in the windows</li>
                     <li>For example:
                         <ol>
                             <li>enrich each business event by getting more data</li>
@@ -513,7 +518,7 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
                 <li>There are plenty of streaming analytics use cases, in any business domain</li>
                 <li>The common pattern is: CEP --> ML --> Notification</li>
                 <li>Pick the right tools for the job; Kafka and Flink are amongst the best</li>
-                <li>Be aware of typical 'fast data' problems: late events, state management, distribution</li>
+                <li>Be aware of typical streaming data issues: late events, state management, distribution</li>
                 <li>Styx is a proven open source framework for Streaming Analytics that is flexible and scalable</li>
             </ul>
         </section>
