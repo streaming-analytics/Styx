@@ -94,7 +94,7 @@
                     <thead><tr>
                         <th>Sector</th>
                         <th>Data source</th>
-                        <th>Pattern + prediction</th>
+                        <th>Pattern</th>
                         <th>Notification</th>
                     </tr></thead>
                     <tbody>
@@ -495,7 +495,7 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
             <section>
                 <h2>Model scoring</h2>
                 <ul>
-                    <li>By doing a <i>flatMap</i> over the events we can apply functions that process/transform the data in the windows</li>
+                    <li>By applying a map function over the events we can apply functions that process/transform the data in the windows</li>
                     <li>For example:
                         <ol>
                             <li>enrich each business event by getting more data</li>
