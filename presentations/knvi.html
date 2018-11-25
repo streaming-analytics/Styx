@@ -4,9 +4,9 @@
 <head>
 	<meta charset="utf-8">
 
-	<title>Styx</title>
+	<title>Fast Data</title>
 
-	<meta name="description" content="Styx Streaming Analytics">
+	<meta name="description" content="Fast Data">
 	<meta name="author" content="Bas Geerdink">
 
 	<meta name="apple-mobile-web-app-capable" content="yes">
@@ -41,12 +41,11 @@
 	<!-- Any section element inside of this container is displayed as a slide -->
 	<div class="slides">
 		<section>
-			<h1>Streaming Analytics</h1>
-            <h3>How to get fast predictions from real-time data</h3>
-            <h3>with Flink, Kafka, Cassandra and PMML</h3>
-            <img src="img/curry-on-logo.png" class="stretch" />
+            <h2>The architecture and technology of</h2>
+			<h1>Fast Data</h1>
+            <img src="img/knvi.png" style="height: 80px;" />
             <p>
-				<small>Bas Geerdink | 16 July 2018 | Curry-On</small>
+				<small>Bas Geerdink | 28 November 2018 | KNVI</small>
 			</p>
 		</section>
 
@@ -72,11 +71,10 @@
 		<section>
 			<h2>Agenda</h2>
 			<ol>
-                <li>Streaming Analytics use cases</li>
+                <li>Fast Data use cases</li>
                 <li>Architecture and Technology</li>
                 <li>Deep dive:
                     <ul>
-                        <li>Kafka-Flink connection</li>
                         <li>Parallel processing</li>
                         <li>Event Time, Windows, and Watermarks</li>
                         <li>Exactly-once Processing</li>
@@ -88,7 +86,16 @@
 		</section>
 
         <section>
-            <h2>Use Cases</h2>
+            <h2>Big Data</h2>
+            <ul>
+                <li>Volume</li>
+                <li>Variety</li>
+                <li>Velocity</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Fast Data Use Cases</h2>
             <small>
                 <table>
                     <thead><tr>
@@ -151,7 +158,7 @@
         </section>
 
         <section>
-            <h2>Streaming Analytics Pattern</h2>
+            <h2>Fast Data Pattern</h2>
             The common pattern in all these scenarios:
             <ol>
                 <li>Detect pattern by combining data (CEP)</li>
@@ -194,37 +201,30 @@
             </section>
 
             <section>
-                <h2>Set up a Flink application</h2>
+                <h2>Flink-Kafka integration</h2>
                 <ul>
-                    <li>A Flink job is a Java/Scala application</li>
-                    <li>Jobs (.jar) can be deployed to a running Flink cluster</li>
-                    <li>Maven dependencies: </li>
+                    <li>A Fast Data application is a running 'job' that processes events in a data store (e.g. Kafka)</li>
+                    <li>Jobs can be deployed as ever-running pieces of software in a cluster (e.g. Spark, Flink)</li>
+                    <li class="fragment" data-fragment-index="1">The basic pattern of a job is:
+                        <ul class="fragment" data-fragment-index="1">
+                            <li>Connect to the stream and consume events</li>
+                            <li>Deserialize data</li>
+                            <li>Group and gather events (windowing)</li>
+                            <li>Perform analysis on each window</li>
+                            <li>Write the result to another stream (sink)</li>
+                        </ul>
+                    </li>
                 </ul>
-                <pre><code data-trim>
-                    <dependency>
-                      <groupId>org.apache.flink</groupId>
-                      <artifactId>flink-scala_2.11</artifactId>
-                      <version>1.5.0</version>
-                      <scope>provided</scope>
-                    </dependency>
-                    <dependency>
-                      <groupId>org.apache.flink</groupId>
-                      <artifactId>flink-streaming-scala_2.11</artifactId>
-                      <version>1.5.0</version>
-                      <scope>provided</scope>
-                    </dependency>
-                </code></pre>
+
             </section>
 
             <section>
-                <h2>Flink-Kafka integration</h2>
-                The <i>FlinkKafkaConsumer</i> and <i>FlinkKafkaProducer</i> classes provide easy connectivity
+                <h2>Hello speed!</h2>
                 <!-- Simplified code: serializing data and making a DataStream of 'raw' Kafka events -->
                 <pre><code data-trim>
-def createKafkaEventStream(env: StreamExecutionEnvironment):
-      DataStream[RawEvent] = {
+def getData(env: StreamExecutionEnvironment): DataStream[MyEvent] = {
 
-    // create KeyedDeserializationSchema
+    // create schema for deserialization
     val readSchema = KafkaSchemaFactory.createKeyedDeserializer
             (readTopicDef, rawEventFromPayload)
 
@@ -232,10 +232,11 @@ def createKafkaEventStream(env: StreamExecutionEnvironment):
     val rawEventSource = new FlinkKafkaConsumer010[BaseKafkaEvent]
             (toStringList(readTopicDef), readSchema, props)
 
-    // create source
+    // connect to source and handle events
     env.addSource(rawEventSource)
       .filter(_.isSuccess)   // if decrypting from kafka succeeded
-      .flatMap(_.toOption)
+      .flatMap(event => doSomething(event))
+      .addSink(writeToOutputStream)
 }
                 </code></pre>
             </section>
@@ -244,24 +245,10 @@ def createKafkaEventStream(env: StreamExecutionEnvironment):
                 <h2>Parallelism</h2>
                 <ul>
                     <li>To get high throughput, we have to process the events in parallel</li>
+                    <li>Parallelism can be configured on cluster level and on job level</li>
+                    <li class="fragment" data-fragment-index="1">On cluster level: set the number of task slots (servers) per job</li>
+                    <li class="fragment" data-fragment-index="1">On job level: distribute the data by grouping on a certain data field</li>
                 </ul>
-                <pre><code data-trim>
-                    taskmanager.numberOfTaskSlots: 4
-                    parallelism.default: 2
-                </code></pre>
-                <ul>
-                    <li>The <i>keyBy</i> function distributes our stream into parallel parts</li>
-                </ul>
-                <pre><code data-trim>
-                      def createCepPipeline(sourceStream: DataStream[RawEvent]):
-                            DataStream[BusinessEvent] = {
-                        val windowStream = sourceStream
-                          .keyBy(_.customerId.head)           // create parallelism: 0..9
-                          .window(GlobalWindows.create())     // window per key
-                          .apply(new WindowResultFunction())  // logic: pattern match
-                          .map(event => event.addTimeStamp("window"))
-                      }
-                </code></pre>
             </section>
 
             <section>
@@ -321,66 +308,21 @@ def createKafkaEventStream(env: StreamExecutionEnvironment):
                 </ul>
             </section>
 
-
             <section>
                 <h2>Watermarks</h2>
                 <ul>
                     <li><i>Watermarks</i> are timestamps that trigger the computation of the window</li>
                     <li>They are generated at a time that allows a bit of slack for <i>late events</i></li>
-                    <li>By default, any event that reaches the processor later than the watermark, but with an event time that should belong to the previous window, is ignored</li>
-                    <li>It's possible to allow late events to trigger recomputation of a window by setting the <i>allowedLateness</i> property</li>
+                    <li class="fragment" data-fragment-index="1">By default, any event that reaches the processor later than the watermark, but with an event time that should belong to the previous window, is ignored</li>
+                    <li class="fragment" data-fragment-index="2">It's possible to allow late events to trigger re-computation of a window by setting the <i>allowedLateness</i> property</li>
                 </ul>
                 <aside class="notes">
                     How do we know when to calculate a window?<br>
                     Watermarks assert that all earlier events have (probably) arrived<br>
                     (other triggers are also possible: processing time, punctuations (data-dependent).<br>
                     IF eventTime < watermark THEN Ignore ELSE Process
-                </aside>
-            </section>
-
-            <section>
-                <h2>Watermarks</h2>
-                <ul>
-                    <li>In Flink, we inject a <i>Timestamp Assigner & Watermark Generator</i></li>
-                </ul>
-                <pre><code data-trim>
-                    createKafkaEventStream(env, readTopicDef, kafkaProperties, jobName)
-                        .assignTimestampsAndWatermarks(
-                             new TimedEventWatermarkExtractor[T]())
-                </code></pre>
-                <ul>
-                    <li>There are <i>periodic</i> (timer-based) and <i>punctuated</i> (stream-based) watermarks:</li>
-                    <ul>
-                        <li>AssignerWithPeriodicWatermarks</li> <!-- assigns timestamps and generates watermarks periodically -->
-                        <li>AssignerWithPunctuatedWatermarks</li> <!-- generate watermarks whenever a certain event indicates that a new watermark might be generated -->
-                    </ul>
-                </ul>
-                <aside class="notes">
                     Example: tumbling window of one hour, watermark is 1 minute. af 14:02 an event comes in with an event time of 13:59
                 </aside>
-            </section>
-
-            <section>
-                <h2>Event Time and Watermarks</h2>
-                <pre><code data-trim>
-                    class TimedEventWatermarkExtractor
-                       extends AssignerWithPeriodicWatermarks[TimedEvent]() {
-
-                        // specify the event time
-                        override def extractTimestamp(element: TimedEvent,
-                                        previousElementTimestamp: Long): Long = {
-                            // set event time to 'eventTime' field in events
-                            element.eventTime.getMillis
-                        }
-
-                        // this method is called to emit a watermark every time the
-                        // ExecutionConfig.setAutoWatermarkInterval(...) interval occurs
-                        override def getCurrentWatermark: Watermark = {
-                            // one second delay for processing of window
-                            new Watermark(System.currentTimeMillis() - 1000)
-                      }
-                    }
-                </code></pre>
             </section>
 
             <section>
@@ -388,9 +330,9 @@ def createKafkaEventStream(env: StreamExecutionEnvironment):
                 <ul>
                     <li>An event has three possible statuses:</li>
                     <ul>
-                        <li>Not processed (in cache on the Kafka bus)</li>
-                        <li>In transit (picked up by Flink, in a window) = <i>state</i></li>
-                        <li>Processed (handled by Flink)</li>
+                        <li>Not processed (in cache on the message bus)</li>
+                        <li>In transit (picked up by a job, in a window) = <i>state</i></li>
+                        <li>Processed (handled by the job)</li>
                     </ul>
                     <li class="fragment" data-fragment-index="1">Kafka knows for each consumer which data has been read: <i>offset</i></li>
                     <li class="fragment" data-fragment-index="1">Flink has <i>checkpoints</i> that allow to replay the stream in case of failures</li>
@@ -423,50 +365,6 @@ def createKafkaEventStream(env: StreamExecutionEnvironment):
                 </aside>
             </section>
 
-            <section>
-                <h2>Upgrading a Flink job</h2>
-                <pre><code data-trim>
-                    # show the current list of jobs: gives job id
-                    /flink/bin/flink list
-
-                    # create a savepoint
-                    /flink/bin/flink savepoint [JOB_ID]
-
-                    # wait for response: gives savepoint id
-                    /flink/bin/flink cancel [JOB_ID]
-
-                    # start the new job
-                    /flink/bin/flink run -p 4 \
-                        -s jobmanager://savepoints/[SAVEPOINT_ID] \
-                        -c com.styx.StyxAppJob styx-app-0.0.1.jar \
-                        --config /opt/flink/jars/reference.conf
-                </code></pre>
-            </section>
-
-            <section>
-                <h2>Flink CEP</h2>
-                <pre><code data-trim>
-val cep = Pattern.begin[ClickEvent]("Page1").within(Time.seconds(1))
-    .where( event =>
-        event match {
-          case c: ClickEvent => c.processStep.equals(steps(0))
-          case _ => false
-        })
-    .next("Page2")  // check that Page1 is followed by Page2
-      .where(event => event match {
-          case c: ClickEvent => c.processStep.equals(steps(1))
-          case _ => false
-        })
-    .next("Page3")  // check that Page2 is followed by Page3
-    .where(event => event match {
-        case c: ClickEvent => c.processStep.equals(steps(2))
-        case _ => false
-      })
-    .within(Time.minutes(30))  // no match = pattern detected
-  }
-                </code></pre>
-            </section>
-
         </section>
 
         <section>
@@ -478,6 +376,7 @@ val cep = Pattern.begin[ClickEvent]("Page1").within(Time.seconds(1))
             <section>
                 <h2>PMML</h2>
                 <ul>
+                    <li>PMML is the glue between data science and data engineering</li>
                     <li>Data scientists who build and train a machine learning model can export it to PMML (or PFA) format</li>
                 </ul>
                 <pre><code data-trim>
@@ -491,9 +390,6 @@ pipeline.fit(events_df, events_df["notifications"])
 
 sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
                 </code></pre>
-                <aside class="notes">
-                    PMML is the glue between data science and data engineering.
-                </aside>
             </section>
 
             <section>
@@ -549,7 +445,6 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
                 <li>The common pattern is: CEP &rarr; ML &rarr; Notification</li>
                 <li>Pick the right tools for the job; Kafka and Flink are amongst the best</li>
                 <li>Be aware of typical streaming data issues: late events, state management, distribution</li>
-                <li>Styx is a proven open source framework for Streaming Analytics that is flexible and scalable</li>
             </ul>
         </section>
 
@@ -564,7 +459,6 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
             <p>
                 <a href="https://github.com/streaming-analytics/Styx">https://github.com/streaming-analytics/Styx</a>
             </p>
-            <p>ING is hiring!</p>
         </section>
 
 	</div>
