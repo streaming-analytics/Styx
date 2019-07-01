@@ -1,5 +1,14 @@
-*.class
-*.log
-
 .idea/
 target/
+*.class
+*.log
+/target/
+/project/target/
+/project/project/
+/spark-warehouse/
+*_eu-central-1.db
+shared-local-instance.db
+.DS_Store
+*.db
+*.pdf
+*.iml
