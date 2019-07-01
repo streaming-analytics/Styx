@@ -130,14 +130,14 @@
                             <td>Alert doctor</td>
                         </tr>
                         <tr>
-                            <td>Retail</td>
+                            <td>Government</td>
                             <td>Tweets</td>
                             <td>Sentiment/trend analysis</td>
                             <td>Social media response</td>
                         </tr>
                         <tr>
                             <td>Traffic</td>
-                            <td>Number of cars passing</td>
+                            <td>Cars passing</td>
                             <td>Traffic jam</td>
                             <td>Update route info</td>
                         </tr>
@@ -146,6 +146,18 @@
                             <td>Machine logs</td>
                             <td>System failure</td>
                             <td>Alert to sys admin</td>
+                        </tr>
+                        <tr>
+                            <td>Gaming</td>
+                            <td>Player actions</td>
+                            <td>Key combos</td>
+                            <td>Action on screen</td>
+                        </tr>
+                        <tr>
+                            <td>Retail</td>
+                            <td>Page visits</td>
+                            <td>Shopping behavior</td>
+                            <td>Reminder</td>
                         </tr>
                     </tbody>
                 </table>
@@ -305,6 +317,7 @@ def getData(env: StreamExecutionEnvironment): DataStream[MyEvent] = {
                     <li><b>Size</b>: large windows lead to big state and long calculations</li>
                     <li><b>Number</b>: many windows (e.g. sliding, session) lead to more calculations</li>
                     <li><b>Evaluation</b>: do all calculations within one window, or keep a cache across multiple windows</li>
+                    <li class="fragment" data-fragment-index="1">Events for a window can appear <i>early</i> or <i>late</i></li>
                 </ul>
             </section>
 
@@ -346,7 +359,7 @@ def getData(env: StreamExecutionEnvironment): DataStream[MyEvent] = {
             <section>
                 <h2>Savepointing and checkpointing</h2>
                 <ul>
-                    <li>A <i>checkpoint</i> is a periodic dump to file of the in-memory state</li>
+                    <li>A <i>checkpoint</i> is a periodic dump to a file on disc of the in-memory state</li>
                 </ul>
                 <pre><code data-trim>
    env.enableCheckPointing(10000)  // checkpoint every 10 seconds

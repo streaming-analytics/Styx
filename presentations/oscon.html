@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+
+    <title>Fast Data</title>
+
+    <meta name="description" content="Fast Data">
+    <meta name="author" content="Bas Geerdink">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/bas.css" id="theme">
+
+    <!-- Theme used for syntax highlighting of code -->
+    <link rel="stylesheet" href="lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = window.location.search.match(/print-pdf/gi) ? 'css/print/pdf.css' : 'css/print/paper.css';
+        document.getElementsByTagName('head')[0].appendChild(link);
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+</head>
+
+<body>
+    <div class="reveal">
+        <!--
+Streaming analytics (or fast data) is becoming an increasingly popular subject in enterprise organizations because customers want to have real-time experiences, such as notifications and advice based on their online behavior and other users’ actions. A typical streaming analytics solution follows a “pipes and filters” pattern that consists of three main steps: detecting patterns on raw event data (complex event processing), evaluating the outcomes with the aid of business rules and machine learning algorithms, and deciding on the next action.
+
+Bas Geerdink details an open source reference solution for streaming analytics that covers many use cases that follow this pattern: actionable insights, fraud detection, log parsing, traffic analysis, factory data, the IoT, and others. The solution is built with the KFC stack: Kafka, Flink, and Cassandra. All source code is written in Scala.
+
+Bas explores a few architecture challenges that arise when dealing with streaming data, such as latency issues, event time versus server time, and exactly once processing. He provides architectural diagrams, explanations, a demo, and the source code. The solution (“Styx”) is open source and available on GitHub.-->
+
+        <div id="header1">
+            <div id="header-left">HEADER-LEFT</div>
+            <div id="header-right">HEADER-RIGHT</div>
+            <div id="footer-left">FOOTER-LEFT</div>
+        </div>
+
+        <!-- Any section element inside of this container is displayed as a slide -->
+        <div class="slides">
+            <section>
+                <h2>Fast data with the </h2>
+                <h1>KFC</h1>
+                <h2>stack</h2>
+                <img src="img/knvi.png" style="height: 80px;" />
+                <p>
+                    <small>Bas Geerdink | July 17, 2019 | O'Reilly OSCon </small>
+                </p>
+            </section>
+
+            <section>
+                <h2>Who am I?</h2>
+                <pre><code data-trim>
+                { "name": "Bas Geerdink",
+                  "role": "Technology Lead",
+                  "company": "ING Bank",
+                  "background": ["Artificial Intelligence",
+                                 "Informatics"],
+                  "mixins": ["Software engineering",
+                             "Architecture",
+                             "Management",
+                             "Innovation"],
+                  "interests": ["Big Data", "Fast Data", "Cool stuff"],
+                  "twitter": "@bgeerdink",
+                  "linked_in": "bgeerdink"
+                }
+            </code></pre>
+            </section>
+
+            <section>
+                <h2>Agenda</h2>
+                <ol>
+                    <li>Fast Data use cases</li>
+                    <li>Architecture and Technology</li>
+                    <li>Deep dive:
+                        <ul>
+                            <li>Parallel processing</li>
+                            <li>Event Time, Windows, and Watermarks</li>
+                            <li>Exactly-once Processing</li>
+                            <li>Model scoring</li>
+                        </ul>
+                    </li>
+                    <li>Wrap-up</li>
+                </ol>
+            </section>
+
+            <section>
+                <h2>Big Data</h2>
+                <ul>
+                    <li>Volume</li>
+                    <li>Variety</li>
+                    <li>Velocity</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Fast Data Use Cases</h2>
+                <small>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Sector</th>
+                                <th>Data source</th>
+                                <th>Pattern</th>
+                                <th>Notification</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Finance</td>
+                                <td>Debit card transactions</td>
+                                <td>Running out of credit</td>
+                                <td>Actionable insight</td>
+                            </tr>
+                            <tr>
+                                <td>Finance</td>
+                                <td>Payment data</td>
+                                <td>Fraud detection</td>
+                                <td>Block money transfer</td>
+                            </tr>
+                            <tr>
+                                <td>Insurance</td>
+                                <td>Page visits</td>
+                                <td>Customer is stuck in form</td>
+                                <td>Chat window</td>
+                            </tr>
+                            <tr>
+                                <td>Healthcare</td>
+                                <td>Patient data</td>
+                                <td>Heart failure</td>
+                                <td>Alert doctor</td>
+                            </tr>
+                            <tr>
+                                <td>Government</td>
+                                <td>Tweets</td>
+                                <td>Sentiment/trend analysis</td>
+                                <td>Social media response</td>
+                            </tr>
+                            <tr>
+                                <td>Traffic</td>
+                                <td>Cars passing</td>
+                                <td>Traffic jam</td>
+                                <td>Update route info</td>
+                            </tr>
+                            <tr>
+                                <td>Internet of Things</td>
+                                <td>Machine logs</td>
+                                <td>System failure</td>
+                                <td>Alert to sys admin</td>
+                            </tr>
+                            <tr>
+                                <td>Gaming</td>
+                                <td>Player actions</td>
+                                <td>Key combos</td>
+                                <td>Action on screen</td>
+                            </tr>
+                            <tr>
+                                <td>Retail</td>
+                                <td>Page visits</td>
+                                <td>Shopping behavior</td>
+                                <td>Reminder</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </small>
+                <aside class="notes">
+                    Mention: IoT, increase of data, importance of analytics, relation with big data.<br> Definition: streaming
+                    is a type of data processing engine that is designed with infinite data sets in mind (Tyler Akidau).<br>                    Real-time
+                    doesn't really exist; so, rather call it <i>fast data</i> processing.
+                </aside>
+            </section>
+
+            <section>
+                <h2>Fast Data Pattern</h2>
+                The common pattern in all these scenarios:
+                <ol>
+                    <li>Detect pattern by combining data (CEP)</li>
+                    <li>Determine relevancy (ML)</li>
+                    <li>Produce notification</li>
+                </ol>
+                <aside class="notes">
+                    One event doesn't mean much, only in combination with other event it gets useful.<br> Also: a lot of
+                    events can be ignored! This is a different pattern than <i>messages</i> in microservices, where each
+                    message has to be handled by (at least one) consumer.<br> CEP: Digital Signal Processing <br> ML + feedback
+                    loop: AI (self-learning and adapting)
+                </aside>
+            </section>
+
+            <section>
+                <h2>Architecture</h2>
+                <img src="img/architecture.png" class="stretch">
+            </section>
+
+            <section>
+                <h2>The KFC stack</h2>
+                <ul>
+                    <li>Data stream storage: <b>Kafka</b></li>
+                    <li>Stream processing: <b>Flink</b></li>
+                    <li>Persisting rules, models, and config: <b>Cassandra</b></li>
+                    <li>Model scoring: <b>PMML</b> and <b>Openscoring.io</b></li>
+                </ul>
+                <aside class="notes">
+                    The KFC stack!<br> Considerations: latency, throughput, connectivity/integration.<br> All: scalable,
+                    mature, fault-tolerant, fast.
+                </aside>
+            </section>
+
+            <section>
+                <section>
+                    <h2>Deep dive part 1</h2>
+                    <img src="img/part1.png" class="stretch">
+                </section>
+
+                <section>
+                    <h2>Flink-Kafka integration</h2>
+                    <ul>
+                        <li>A Fast Data application is a running 'job' that processes events in a data store (e.g. Kafka)</li>
+                        <li>Jobs can be deployed as ever-running pieces of software in a cluster (e.g. Spark, Flink)</li>
+                        <li class="fragment" data-fragment-index="1">The basic pattern of a job is:
+                            <ul class="fragment" data-fragment-index="1">
+                                <li>Connect to the stream and consume events</li>
+                                <li>Deserialize data</li>
+                                <li>Group and gather events (windowing)</li>
+                                <li>Perform analysis on each window</li>
+                                <li>Write the result to another stream (sink)</li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                </section>
+
+                <section>
+                    <h2>Hello speed!</h2>
+                    <!-- Simplified code: serializing data and making a DataStream of 'raw' Kafka events -->
+                    <pre><code data-trim>
+def getData(env: StreamExecutionEnvironment): DataStream[MyEvent] = {
+
+    // create schema for deserialization
+    val readSchema = KafkaSchemaFactory.createKeyedDeserializer
+            (readTopicDef, rawEventFromPayload)
+
+    // consume events
+    val rawEventSource = new FlinkKafkaConsumer010[BaseKafkaEvent]
+            (toStringList(readTopicDef), readSchema, props)
+
+    // connect to source and handle events
+    env.addSource(rawEventSource)
+      .filter(_.isSuccess)   // if decrypting from kafka succeeded
+      .flatMap(event => doSomething(event))
+      .addSink(writeToOutputStream)
+}
+                </code></pre>
+                </section>
+
+                <section>
+                    <h2>Parallelism</h2>
+                    <ul>
+                        <li>To get high throughput, we have to process the events in parallel</li>
+                        <li>Parallelism can be configured on cluster level and on job level</li>
+                        <li class="fragment" data-fragment-index="1">On cluster level: set the number of task slots (servers)
+                            per job</li>
+                        <li class="fragment" data-fragment-index="1">On job level: distribute the data by grouping on a certain
+                            data field</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2>Event time</h2>
+                    <ul>
+                        <li>Events occur at certain time <span class="fragment fade-in" data-fragment-index="1">
+                                <b>&rAarr; event time</b></span></li>
+                        <li>... but arrive a little while later <span class="fragment fade-in" data-fragment-index="1">
+                                <b>&rAarr; processing time</b></span></li>
+                    </ul>
+                    <img src="img/EventTime.png" class="fragment" data-fragment-index="2" />
+                    <pre class="fragment" data-fragment-index="3"><code data-trim>
+                    env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
+                </code></pre>
+                    <aside class="notes">
+                        Events can reach us <i>out-of-order</i>; by looking at the event time we can still detect the original
+                        order</li>
+                    </aside>
+                </section>
+
+                <section>
+                    <h2>Out-of-orderness</h2>
+                    <img src="img/EventTime_StarWars.png" class="stretch" /><br>
+                    <img src="img/Star_Wars_logo.png" style="width:200px;" />
+                </section>
+
+                <section>
+                    <h2>Windows</h2>
+                    <ul>
+                        <li>In processing infinite streams, we usually look at a time <i>window</i> </li>
+                        <li>A windows can be considered as a <i>bucket of time</i></li>
+                        <li class="fragment" data-fragment-index="1">There are different types of windows:
+                            <ul class="fragment" data-fragment-index="1">
+                                <li>Sliding window</li> <!-- e.g. looking back at the last hour, continuous updating average of system activity -->
+                                <li>Tumbling window</li> <!-- e.g. processing data per day to get a financial report -->
+                                <li>Session window</li> <!-- based on event data, e.g. users logged in and out -->
+                                <!-- <li>Global window</li> -->
+                                <!-- per key, e.g. check _all_ user activity -->
+                            </ul>
+                        </li>
+                        <aside class="notes">
+                            Windows can be very large (e.g. weeks) and thereby gather a lot of state. At the end of a window, a function (Window operator)
+                            is called.
+                        </aside>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2>Windows</h2>
+                    <img src="img/Windows.png" class="stretch" />
+                </section>
+
+                <section>
+                    <h2>Window considerations</h2>
+                    <ul>
+                        <li><b>Size</b>: large windows lead to big state and long calculations</li>
+                        <li><b>Number</b>: many windows (e.g. sliding, session) lead to more calculations</li>
+                        <li><b>Evaluation</b>: do all calculations within one window, or keep a cache across multiple windows</li>
+                        <li class="fragment" data-fragment-index="1">Events for a window can appear <i>early</i> or <i>late</i></li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2>Watermarks</h2>
+                    <ul>
+                        <li><i>Watermarks</i> are timestamps that trigger the computation of the window</li>
+                        <li>They are generated at a time that allows a bit of slack for <i>late events</i></li>
+                        <li class="fragment" data-fragment-index="1">By default, any event that reaches the processor later
+                            than the watermark, but with an event time that should belong to the previous window, is ignored</li>
+                        <li class="fragment" data-fragment-index="2">It's possible to allow late events to trigger re-computation
+                            of a window by setting the <i>allowedLateness</i> property</li>
+                    </ul>
+                    <aside class="notes">
+                        How do we know when to calculate a window?<br> Watermarks assert that all earlier events have (probably)
+                        arrived<br> (other triggers are also possible: processing time, punctuations (data-dependent).<br>                        IF
+                        eventTime < watermark THEN Ignore ELSE Process Example: tumbling window of one hour, watermark is
+                            1 minute. af 14:02 an event comes in with an event time of 13:59 </aside>
+                </section>
+
+                <section>
+                    <h2>Exactly-once processing</h2>
+                    <ul>
+                        <li>An event has three possible statuses:</li>
+                        <ul>
+                            <li>Not processed (in cache on the message bus)</li>
+                            <li>In transit (picked up by a job, in a window) = <i>state</i></li>
+                            <li>Processed (handled by the job)</li>
+                        </ul>
+                        <li class="fragment" data-fragment-index="1">Kafka knows for each consumer which data has been read:
+                            <i>offset</i></li>
+                        <li class="fragment" data-fragment-index="1">Flink has <i>checkpoints</i> that allow to replay the
+                            stream in case of failures</li>
+                        <li class="fragment" data-fragment-index="1">This combination guarantees that an event goes through
+                            the system <i>exactly once</i></li>
+                    </ul>
+                    <aside class="notes">
+                        Other options for semantics are <b>at-least-once</b> and <b>at-most-once</b> processing
+                    </aside>
+                </section>
+
+                <section>
+                    <h2>Savepointing and checkpointing</h2>
+                    <ul>
+                        <li>A <i>checkpoint</i> is a periodic dump to a file on disc of the in-memory state</li>
+                    </ul>
+                    <pre><code data-trim>
+   env.enableCheckPointing(10000)  // checkpoint every 10 seconds
+                </code></pre>
+                    <ul>
+                        <li>A <i>savepoint</i> is a manual checkpoint</li>
+                        <li>The state dumps can be used for recovery and replay</li>
+                    </ul>
+                    <pre><code data-trim>
+    # Supported backends: jobmanager, filesystem, rocksdb
+    #
+    state.backend: filesystem
+                </code></pre>
+                    <aside class="notes">
+                        Trade-off: size of state vs speed of recovery/updates
+                    </aside>
+                </section>
+
+            </section>
+
+            <section>
+                <section>
+                    <h2>Deep dive part 2</h2>
+                    <img src="img/part2.png" class="stretch" />
+                </section>
+
+                <section>
+                    <h2>PMML</h2>
+                    <ul>
+                        <li>PMML is the glue between data science and data engineering</li>
+                        <li>Data scientists who build and train a machine learning model can export it to PMML (or PFA) format</li>
+                    </ul>
+                    <pre><code data-trim>
+from sklearn.linear_model import LogisticRegression
+from sklearn2pmml import sklearn2pmml
+
+events_df = pandas.read_csv("events.csv")
+
+pipeline = PMMLPipeline(...)
+pipeline.fit(events_df, events_df["notifications"])
+
+sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
+                </code></pre>
+                </section>
+
+                <section>
+                    <h2>PMML</h2>
+                    <img src="img/PMML.png" class="stretch" />
+                </section>
+
+                <section>
+                    <h2>Model scoring</h2>
+                    <ul>
+                        <li>By applying a map function over the events we can apply functions that process/transform the
+                            data in the windows</li>
+                        <li>For example:
+                            <ol>
+                                <li>enrich each business event by getting more data</li>
+                                <li>filtering events based on selection criteria (rules)</li>
+                                <li>score a machine learning model on each event</li>
+                                <li>write the outcome to a new event / output stream</li>
+                            </ol>
+                        </li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2>Openscoring.io</h2>
+                    <pre><code data-trim>
+                def score(event: RichBusinessEvent, pmmlModel: PmmlModel): Double = {
+                    val arguments = new util.LinkedHashMap[FieldName, FieldValue]
+
+                    for (inputField: InputField <- pmmlModel.getInputFields.asScala) {
+                        arguments.put(inputField.getField.getName,
+                            inputField.prepare(customer.all(fieldName.getValue)))
+                    }
+
+                    // return the notification with a relevancy score
+                    val results = pmmlModel.evaluate(arguments)
+
+                    pmmlModel.getTargetFields.asScala.headOption match {
+                        case Some(targetField) =>
+                            val targetFieldValue = results.get(targetField.getName)
+                        case _ => throw new Exception("No valid target")
+                        }
+                    }
+                }
+                </code></pre>
+                </section>
+
+            </section>
+
+            <section>
+                <h2>Wrap-up</h2>
+                <ul>
+                    <li>There are plenty of streaming analytics use cases, in any business domain</li>
+                    <li>The common pattern is: CEP &rarr; ML &rarr; Notification</li>
+                    <li>Pick the right tools for the job; Kafka and Flink are amongst the best</li>
+                    <li>Be aware of typical streaming data issues: late events, state management, distribution</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Thanks!</h2>
+                <p>Read more about streaming analytics at:</p>
+                <ul>
+                    <li><a href="https://www.oreilly.com/ideas/the-world-beyond-batch-streaming-101">The world beyond batch:
+                            Streaming 101</a></li>
+                    <li><a href="https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/43864.pdf">Google
+                            Dataflow paper</a></li>
+                </ul>
+                <p>Source code and presentation is available at:</p>
+                <p>
+                    <a href="https://github.com/streaming-analytics/Styx">https://github.com/streaming-analytics/Styx</a>
+                </p>
+            </section>
+
+        </div>
+
+        <div id="footer">
+            <img src="img/oscon_footer.png" style="width:100%; max-width:100%;">
+        </div>
+
+    </div> <!-- reveal -->
+
+    <script src="lib/js/head.min.js"></script>
+    <script src="js/reveal.js"></script>
+
+    <script>
+        // More info https://github.com/hakimel/reveal.js#configuration
+        Reveal.initialize({
+            controls: true,
+            progress: true,
+            history: true,
+            center: true,
+
+            transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+            // More info https://github.com/hakimel/reveal.js#dependencies
+            dependencies: [
+                { src: 'lib/js/classList.js', condition: function () { return !document.body.classList; } },
+                { src: 'plugin/markdown/marked.js', condition: function () { return !!document.querySelector('[data-markdown]'); } },
+                { src: 'plugin/markdown/markdown.js', condition: function () { return !!document.querySelector('[data-markdown]'); } },
+                { src: 'plugin/highlight/highlight.js', async: true, callback: function () { hljs.initHighlightingOnLoad(); } },
+                { src: 'plugin/search/search.js', async: true },
+                { src: 'plugin/zoom-js/zoom.js', async: true },
+                { src: 'plugin/notes/notes.js', async: true }
+            ]
+        });
+
+    </script>
+
+</body>
+
+</html>

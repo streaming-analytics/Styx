@@ -47,6 +47,12 @@ body {
   background-color: #fff;
   color: #000; }
 
+#footer {
+    position:absolute;
+    bottom:0;
+    width:100%;
+ }
+
 /*********************************************
  * VIEW FRAGMENTS
  *********************************************/
