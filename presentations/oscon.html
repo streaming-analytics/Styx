@@ -37,35 +37,30 @@
 
 <body>
     <div class="reveal">
-        <!--
-Streaming analytics (or fast data) is becoming an increasingly popular subject in enterprise organizations because customers want to have real-time experiences, such as notifications and advice based on their online behavior and other users’ actions. A typical streaming analytics solution follows a “pipes and filters” pattern that consists of three main steps: detecting patterns on raw event data (complex event processing), evaluating the outcomes with the aid of business rules and machine learning algorithms, and deciding on the next action.
-
-Bas Geerdink details an open source reference solution for streaming analytics that covers many use cases that follow this pattern: actionable insights, fraud detection, log parsing, traffic analysis, factory data, the IoT, and others. The solution is built with the KFC stack: Kafka, Flink, and Cassandra. All source code is written in Scala.
-
-Bas explores a few architecture challenges that arise when dealing with streaming data, such as latency issues, event time versus server time, and exactly once processing. He provides architectural diagrams, explanations, a demo, and the source code. The solution (“Styx”) is open source and available on GitHub.-->
-
-        <div id="header1">
-            <div id="header-left">HEADER-LEFT</div>
-            <div id="header-right">HEADER-RIGHT</div>
-            <div id="footer-left">FOOTER-LEFT</div>
-        </div>
 
         <!-- Any section element inside of this container is displayed as a slide -->
         <div class="slides">
             <section>
                 <h2>Fast data with the </h2>
-                <h1>KFC</h1>
-                <h2>stack</h2>
-                <img src="img/knvi.png" style="height: 80px;" />
+                <h1>KFC stack</h1>
+                <img src="img/oscon.jpg" style="height: 150px;" />
                 <p>
                     <small>Bas Geerdink | July 17, 2019 | O'Reilly OSCon </small>
                 </p>
+                <aside class="notes">
+                        Streaming analytics (or fast data) is becoming an increasingly popular subject in enterprise organizations because customers want to have real-time experiences, such as notifications and advice based on their online behavior and other users’ actions. A typical streaming analytics solution follows a “pipes and filters” pattern that consists of three main steps: detecting patterns on raw event data (complex event processing), evaluating the outcomes with the aid of business rules and machine learning algorithms, and deciding on the next action.
+
+                        Bas Geerdink details an open source reference solution for streaming analytics that covers many use cases that follow this pattern: actionable insights, fraud detection, log parsing, traffic analysis, factory data, the IoT, and others. The solution is built with the KFC stack: Kafka, Flink, and Cassandra. All source code is written in Scala.
+                        
+                        Bas explores a few architecture challenges that arise when dealing with streaming data, such as latency issues, event time versus server time, and exactly once processing. He provides architectural diagrams, explanations, a demo, and the source code. The solution (“Styx”) is open source and available on GitHub.
+                </aside>
             </section>
 
             <section>
                 <h2>Who am I?</h2>
                 <pre><code data-trim>
-                { "name": "Bas Geerdink",
+                { 
+                  "name": "Bas Geerdink",
                   "role": "Technology Lead",
                   "company": "ING Bank",
                   "background": ["Artificial Intelligence",
@@ -121,10 +116,10 @@ Bas explores a few architecture challenges that arise when dealing with streamin
                         </thead>
                         <tbody>
                             <tr>
-                                <td>Finance</td>
-                                <td>Debit card transactions</td>
-                                <td>Running out of credit</td>
-                                <td>Actionable insight</td>
+                                <td>Marketing</td>
+                                <td>Tweets</td>
+                                <td>Trend/sentiment analysis</td>
+                                <td>Actionable insights / Promoted Tweets</td>
                             </tr>
                             <tr>
                                 <td>Finance</td>
@@ -147,7 +142,7 @@ Bas explores a few architecture challenges that arise when dealing with streamin
                             <tr>
                                 <td>Government</td>
                                 <td>Tweets</td>
-                                <td>Sentiment/trend analysis</td>
+                                <td>Sentiment/troooo,end analysis</td>
                                 <td>Social media response</td>
                             </tr>
                             <tr>
@@ -515,6 +510,12 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
             progress: true,
             history: true,
             center: true,
+
+            // The "normal" size of the presentation, aspect ratio will be preserved
+            // when the presentation is scaled to fit different resolutions. Can be
+            // specified using percentage units.
+            width: 960,
+            height: 540,
 
             transition: 'slide', // none/fade/slide/convex/concave/zoom
 
