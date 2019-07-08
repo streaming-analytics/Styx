@@ -14,7 +14,7 @@ class CqlBatchExecutorSpec extends BaseSpec {
     val t0 = System.nanoTime()
     val result = block
     val t1 = System.nanoTime()
-    logger.info(s"Elapsed time of $name: ${t1 - t0} ns")
+    LOG.info(s"Elapsed time of $name: ${t1 - t0} ns")
     TimedResult((t1 - t0) nanoseconds, result)
   }
 
@@ -47,8 +47,8 @@ class CqlBatchExecutorSpec extends BaseSpec {
     val batchRunner = time("runBatch")(executor.runBatch(records, handler, batchSize))
     val batchResult = time("await result")(Await.result(batchRunner.result, sequentialExecutionDuration))
     val totalDuration = batchRunner.duration.plus(batchResult.duration)
-    logger.info(s"Total duration = $totalDuration")
-    logger.info(s"Sequential execution duration = $sequentialExecutionDuration")
+    LOG.info(s"Total duration = $totalDuration")
+    LOG.info(s"Sequential execution duration = $sequentialExecutionDuration")
     val numBatches = math.ceil(numRecords / batchSize.toDouble)
 
     withClue("Number of batch durations it took for initiating the sequence of batches") {

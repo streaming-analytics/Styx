@@ -14,37 +14,35 @@ import org.apache.flink.streaming.api.windowing.time.Time
 import org.joda.time.{DateTime, Period}
 
 object StyxTwitterAnalysisJob extends App with Logging {
-  override def main(args: Array[String]): Unit = {
-    // configuration
-    val dataSourcePath = "/data/sample.json"
-    val minimumWordLength = 5
-    val wordsToIgnore = Array("would", "could", "should", "sometimes", "maybe", "perhaps", "nothing", "please", "today", "twitter", "everyone", "people", "think", "where", "about", "still", "youre", "photo", "movie")
-    // setting this in seconds gives flexibility, shortest window is 1 second
-    val evaluationPeriodInSeconds = 60 * 60 * 24 // 1 day
-    val topN = 5
-    val dateTimePattern = "yyyy-MM-dd HH:mm:sss"
+  // configuration
+  val dataSourcePath = "/data/sample.json"
+  val minimumWordLength = 5
+  val wordsToIgnore = Array("would", "could", "should", "sometimes", "maybe", "perhaps", "nothing", "please", "today", "twitter", "everyone", "people", "think", "where", "about", "still", "youre", "photo", "movie")
+  // setting this in seconds gives flexibility, shortest window is 1 second
+  val evaluationPeriodInSeconds = 60 * 60 * 24 // 1 day
+  val topN = 5
+  val dateTimePattern = "yyyy-MM-dd HH:mm:sss"
 
-    LOG.info("Start!")
+  LOG.info("Start!")
 
-    // set up Flink
-    val startTime = DateTime.now
-    val env = StreamExecutionEnvironment.getExecutionEnvironment
-    env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
+  // set up Flink
+  val startTime = DateTime.now
+  val env = StreamExecutionEnvironment.getExecutionEnvironment
+  env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 
-    // load the data
-    val path = getClass.getResource(dataSourcePath)
+  // load the data
+  val path = getClass.getResource(dataSourcePath)
 
-    ///// part 1: count the words per day /////
-    val wordsStream: DataStream[WordCount] = wordCount(env, path, minimumWordLength, evaluationPeriodInSeconds, wordsToIgnore)
+  ///// part 1: count the words per day /////
+  val wordsStream: DataStream[WordCount] = wordCount(env, path, minimumWordLength, evaluationPeriodInSeconds, wordsToIgnore)
 
-    ///// part 2: look at 2 periods (e.g. days) and calculate slope, find top 5 /////
-    trendsAnalysis(wordsStream, evaluationPeriodInSeconds, topN, dateTimePattern)
+  ///// part 2: look at 2 periods (e.g. days) and calculate slope, find top 5 /////
+  trendsAnalysis(wordsStream, evaluationPeriodInSeconds, topN, dateTimePattern)
 
-    env.execute("Twitter trends")
+  env.execute("Twitter trends")
 
-    LOG.info("Done!")
-    LOG.info(s"Finished in ${new Period(startTime.getMillis, DateTime.now.getMillis).getSeconds} seconds")
-  }
+  LOG.info("Done!")
+  LOG.info(s"Finished in ${new Period(startTime.getMillis, DateTime.now.getMillis).getSeconds} seconds")
 
   private def wordCount(env: StreamExecutionEnvironment, path: URL, minWordL: Int, seconds: Int, ignore: Array[String]): DataStream[WordCount] = {
     val mapper: ObjectMapper = new ObjectMapper()

@@ -10,7 +10,7 @@ trait EmbeddedCassandra extends BeforeAndAfterAll with Logging {
   override def beforeAll(): Unit = {
     super.beforeAll()
 
-    logger.info("Starting embedded Cassandra...")
+    LOG.info("Starting embedded Cassandra...")
     EmbeddedCassandraServerHelper.startEmbeddedCassandra()
   }
 }

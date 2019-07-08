@@ -119,7 +119,7 @@ lazy val styxFrameworksCassandra = (project in file("styx-frameworks-cassandra")
   .dependsOn(styxFrameworksInterfaces)
   .settings(
     name := "styx-frameworks-cassandra",
-    libraryDependencies ++= cassandraDependencies)
+    libraryDependencies ++= commonDependencies ++ cassandraDependencies)
 
 lazy val styxFrameworksFlink = (project in file("styx-frameworks-flink"))
   .dependsOn(styxFrameworksInterfaces)
