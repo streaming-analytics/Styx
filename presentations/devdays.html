@@ -429,7 +429,7 @@ def createKafkaEventStream(env: StreamExecutionEnvironment):
                     # start the new job
                     /flink/bin/flink run -p 4 \
                         -s jobmanager://savepoints/[SAVEPOINT_ID] \
-                        -c com.styx.StyxAppJob styx-app-0.0.1.jar \
+                        -c ai.styx.StyxAppJob styx-app-0.0.1.jar \
                         --config /opt/flink/jars/reference.conf
                 </code></pre>
             </section>
