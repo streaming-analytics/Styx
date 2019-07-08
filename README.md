@@ -1,6 +1,8 @@
 #Styx
-##The multi-purpose STreaming AnalytYX platform based on Flink, Kafka and Cassandra
+_The multi-purpose STreaming AnalytYX platform based on Flink, Kafka and Cassandra_
 
+
+## Running instructions
 ### Flink
 To start Flink:
 ```bash
@@ -40,3 +42,14 @@ To start a Kafka consumer:
 ```bash
 bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic test --from-beginning
 ```
+
+## Use cases
+* Twitter trends
+* Clickstream analysis
+* Shopping pattern
+
+## Useful commands
+Monitor dependent libraries for known, published vulnerabilities: 
+```sbt dependencyCheckAggregate```
+
+Check if any dependencies can be updated: ```sbt dependencyUpdates```
