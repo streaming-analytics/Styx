@@ -15,7 +15,7 @@ import org.joda.time.{DateTime, Period}
 
 object StyxTwitterAnalysisJob extends App with Logging {
   // configuration
-  val dataSourcePath = "/data/sample.json"
+  val dataSourcePath = "/data/sample1.json"
   val minimumWordLength = 5
   val wordsToIgnore = Array("would", "could", "should", "sometimes", "maybe", "perhaps", "nothing", "please", "today", "twitter", "everyone", "people", "think", "where", "about", "still", "youre", "photo", "movie")
   // setting this in seconds gives flexibility, shortest window is 1 second
@@ -57,7 +57,10 @@ object StyxTwitterAnalysisJob extends App with Logging {
     implicit val typeInfo5 = TypeInformation.of(classOf[(String, Int)])
     implicit val typeInfo6 = TypeInformation.of(classOf[WordCount])
 
-    env.readTextFile(path.getPath)
+    val dataPath = path.getPath
+    LOG.info(s"Getting data from $dataPath ...")
+
+    env.readTextFile(dataPath)
       // parse json
       .map(line => parse(line, mapper)).filter(_.isDefined).map(_.get).name("Parsing JSON string")
       // set event timestamp
@@ -89,7 +92,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
   }
 
   private def parse(line: String, mapper: ObjectMapper): Option[Tweet] = {
-    val tweet = mapper.readValue(line, classOf[Tweet])
+    val tweet = mapper.readValue(line, classOf[Tweet])    // .replaceAll("[$\\[\\]{}]", "")
     if (tweet == null || tweet.messageText == null || tweet.creationDate == null) None else Some(tweet)
   }
 
