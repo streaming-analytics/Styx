@@ -4,23 +4,12 @@ Styx TODO
 - Twitter example job
 - clickstream example job (page visits)
 
-- Kafka 10 or 11?
-
 - scripts to:
     - launch Cassandra (local / embedded)
     - launch Kafka (local / embedded)
     - launch Flink (local / embedded)
 
-- upgrade to sbt 1.0.0
-- upgrade to scala 2.12.4 (not possible in Flink 1.4.0)
-- use Coursier?
-
 - Codacy, Jenkins, etc.
-
-- styx.com -> styx.ai
-
-- rename styx-flink-kafka to styx-frameworks-flink-kafka
-- rename styx-appRunner to styx-app-runner
 
 - rename NotificationEvent to IntermediateEvent
 - rename CcEvent to NotificationEvent
@@ -34,16 +23,15 @@ TODO-list
 * Make Machine Learning functions generic, indpendent of Shopping use case? To be discussed... another option is to deploy a separate Flink job for each use case.
 * make CEP Engine Function and ML Function into separate modules
 * make a separate module for each use case
+* fix EmbeddedFlink and use it for testing
+* create demo for timestamps
+* create demo for
 
 Clean-up / Simplify
 -------------------
 / styx-app
 - styx-appRunner
 - styx-commons
-V styx-frameworks-flink
-V styx-frameworks-kafka
-V styx-frameworks-cassandra
-V styx-frameworks-openscoring
 ? styx-deployment-validator
 ? styx-support-db
 ? styx-support-pos

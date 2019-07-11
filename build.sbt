@@ -1,16 +1,16 @@
 import sbt.Keys._
 
-val slf4jV = "1.7.25" // Our logging framework
+val slf4jV = "1.7.26" // Our logging framework
 val logbackV = "1.2.3" // Our logging implementation
 val jodatimeV = "2.9.9"
 val jodaConvertV = "2.0"
 val typesafeV = "1.3.2"
 val jacksonV = "3.5.3"
 val scalatestV = "3.0.5"
-val circeV = "0.9.1"
+val circeV = "0.11.1"
 val flinkV = "1.7.0"
 val flinkKafkaV = "0.11"
-val flinkKafkaConnectorV = "1.8.0"
+val flinkKafkaConnectorV = "1.8.1"
 val cassandraV = "3.11.1"
 val cassandraDriverV = "3.3.2"
 val cassandraUnitV = "3.3.0.2"
@@ -18,7 +18,7 @@ val kafkaV = "0.11.0.2"
 val sparkV = "2.4.0"
 val embeddedKafkaV = "1.0.0"
 val codehaleMetricsV = "3.0.2"
-val jpmmlV = "1.3.11"
+val jpmmlV = "1.4.11"
 
 lazy val commonSettings = Seq(
   organization := "github.com/streaming-analytics",

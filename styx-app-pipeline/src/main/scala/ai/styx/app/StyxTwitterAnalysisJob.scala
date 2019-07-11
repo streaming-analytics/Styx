@@ -1,25 +1,28 @@
 package ai.styx.app
 
 import java.net.URL
+import java.util.Properties
 
-import ai.styx.common.Logging
+import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.{Trend, Tweet, WordCount}
 import ai.styx.usecases.twitter.{TrendsWindowFunction, TweetTimestampAndWatermarkGenerator, WordCountWindowFunction}
+import org.apache.flink.api.common.serialization.SimpleStringSchema
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows
 import org.apache.flink.streaming.api.windowing.time.Time
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer
 import org.joda.time.{DateTime, Period}
 
 object StyxTwitterAnalysisJob extends App with Logging {
   // configuration
+  implicit val config: Configuration = Configuration.load()
   val dataSourcePath = "/data/sample1.json"
   val minimumWordLength = 5
-  val wordsToIgnore = Array("would", "could", "should", "sometimes", "maybe", "perhaps", "nothing", "please", "today", "twitter", "everyone", "people", "think", "where", "about", "still", "youre", "photo", "movie")
-  // setting this in seconds gives flexibility, shortest window is 1 second
-  val evaluationPeriodInSeconds = 60 * 60 * 24 // 1 day
+  val wordsToIgnore = Array("would", "could", "should", "sometimes", "maybe", "perhaps", "nothing", "please", "today", "twitter", "everyone", "people", "think", "where", "about", "still", "youre")
+  val evaluationPeriodInSeconds = 60 * 60 // 1 hour
   val topN = 5
   val dateTimePattern = "yyyy-MM-dd HH:mm:sss"
 
@@ -31,10 +34,25 @@ object StyxTwitterAnalysisJob extends App with Logging {
   env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 
   // load the data
-  val path = getClass.getResource(dataSourcePath)
+  val properties = new Properties()
+  properties.setProperty("bootstrap.servers", config.kafkaConfig.bootstrapServers)
+  properties.setProperty("group.id", config.kafkaConfig.groupId)
 
-  ///// part 1: count the words per day /////
-  val wordsStream: DataStream[WordCount] = wordCount(env, path, minimumWordLength, evaluationPeriodInSeconds, wordsToIgnore)
+  // load the data
+  //val path = getClass.getResource(dataSourcePath)
+
+  implicit val typeInfo1 = TypeInformation.of(classOf[Tweet])
+  implicit val typeInfo2 = TypeInformation.of(classOf[Option[Tweet]])
+  implicit val typeInfo3 = TypeInformation.of(classOf[Option[String]])
+  implicit val typeInfo4 = TypeInformation.of(classOf[String])
+  implicit val typeInfo5 = TypeInformation.of(classOf[(String, Int)])
+  implicit val typeInfo6 = TypeInformation.of(classOf[WordCount])
+
+  val stream = env
+    .addSource(new FlinkKafkaConsumer[String](config.kafkaConfig.topics, new SimpleStringSchema(), properties))
+
+  ///// part 1: count the words per period /////
+  val wordsStream: DataStream[WordCount] = wordCount(env, stream, minimumWordLength, evaluationPeriodInSeconds, wordsToIgnore)
 
   ///// part 2: look at 2 periods (e.g. days) and calculate slope, find top 5 /////
   trendsAnalysis(wordsStream, evaluationPeriodInSeconds, topN, dateTimePattern)
@@ -42,25 +60,20 @@ object StyxTwitterAnalysisJob extends App with Logging {
   env.execute("Twitter trends")
 
   LOG.info("Done!")
-  LOG.info(s"Finished in ${new Period(startTime.getMillis, DateTime.now.getMillis).getSeconds} seconds")
+  //LOG.info(s"Finished in ${new Period(startTime.getMillis, DateTime.now.getMillis).getSeconds} seconds")
 
-  private def wordCount(env: StreamExecutionEnvironment, path: URL, minWordL: Int, seconds: Int, ignore: Array[String]): DataStream[WordCount] = {
+  private def wordCount(env: StreamExecutionEnvironment, rawData: DataStream[String], minWordL: Int, seconds: Int, ignore: Array[String]): DataStream[WordCount] = {
     val mapper: ObjectMapper = new ObjectMapper()
     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
     mapper.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false)
 
-    implicit val typeInfo1 = TypeInformation.of(classOf[Tweet])
-    implicit val typeInfo2 = TypeInformation.of(classOf[Option[Tweet]])
-    implicit val typeInfo3 = TypeInformation.of(classOf[Option[String]])
-    implicit val typeInfo4 = TypeInformation.of(classOf[String])
-    implicit val typeInfo5 = TypeInformation.of(classOf[(String, Int)])
-    implicit val typeInfo6 = TypeInformation.of(classOf[WordCount])
 
-    val dataPath = path.getPath
-    LOG.info(s"Getting data from $dataPath ...")
+    //val dataPath = path.getPath
+    //LOG.info(s"Getting data from $dataPath ...")
 
-    env.readTextFile(dataPath)
+    rawData
+//    env.readTextFile(dataPath)
       // parse json
       .map(line => parse(line, mapper)).filter(_.isDefined).map(_.get).name("Parsing JSON string")
       // set event timestamp
