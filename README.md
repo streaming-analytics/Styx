@@ -30,17 +30,22 @@ bin/kafka-server-start.sh config/server.properties
 
 To create a Kafka topic:
 ```bash
-bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic test
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic tweets
 ```
 
 To start a Kafka producer:
 ```bash
-bin/kafka-console-producer.sh --broker-list localhost:9092 --topic test
+bin/kafka-console-producer.sh --broker-list localhost:9092 --topic tweets
 ```
 
 To start a Kafka consumer:
 ```bash
-bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic test --from-beginning
+bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic tweets --from-beginning
+```
+
+To stream a file to Kafka:
+```bash
+bin/
 ```
 
 ## Use cases

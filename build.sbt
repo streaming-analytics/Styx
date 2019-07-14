@@ -171,8 +171,15 @@ lazy val styxAppPipeline = (project in file("styx-app-pipeline"))
     commonSettings,
     name := "styx-app-pipeline")
 
+lazy val styxAppDemo = (project in file("styx-app-demo"))
+  .dependsOn(styxUseCasesShopping, styxUseCasesClickStream, styxUseCasesTwitterSentiment, styxFrameworksFlink, styxFrameworksKafka)
+  .settings(
+    commonSettings,
+    name := "styx-app-demo")
+
 lazy val root = (project in file("."))
   .aggregate(
+    styxAppDemo,
     styxAppPipeline,
     styxUseCasesInterfaces,
     styxUseCasesShopping,

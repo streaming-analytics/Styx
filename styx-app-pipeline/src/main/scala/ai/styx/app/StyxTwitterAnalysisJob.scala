@@ -16,13 +16,15 @@ import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer
 import org.joda.time.{DateTime, Period}
 
+import scala.util.Try
+
 object StyxTwitterAnalysisJob extends App with Logging {
   // configuration
   implicit val config: Configuration = Configuration.load()
   val dataSourcePath = "/data/sample1.json"
   val minimumWordLength = 5
   val wordsToIgnore = Array("would", "could", "should", "sometimes", "maybe", "perhaps", "nothing", "please", "today", "twitter", "everyone", "people", "think", "where", "about", "still", "youre")
-  val evaluationPeriodInSeconds = 60 * 60 // 1 hour
+  val evaluationPeriodInSeconds = 2 // 60 * 60 // 1 hour
   val topN = 5
   val dateTimePattern = "yyyy-MM-dd HH:mm:sss"
 
@@ -33,7 +35,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
   val env = StreamExecutionEnvironment.getExecutionEnvironment
   env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 
-  // load the data
+  // connect to Kafka
   val properties = new Properties()
   properties.setProperty("bootstrap.servers", config.kafkaConfig.bootstrapServers)
   properties.setProperty("group.id", config.kafkaConfig.groupId)
@@ -60,7 +62,6 @@ object StyxTwitterAnalysisJob extends App with Logging {
   env.execute("Twitter trends")
 
   LOG.info("Done!")
-  //LOG.info(s"Finished in ${new Period(startTime.getMillis, DateTime.now.getMillis).getSeconds} seconds")
 
   private def wordCount(env: StreamExecutionEnvironment, rawData: DataStream[String], minWordL: Int, seconds: Int, ignore: Array[String]): DataStream[WordCount] = {
     val mapper: ObjectMapper = new ObjectMapper()
@@ -68,13 +69,16 @@ object StyxTwitterAnalysisJob extends App with Logging {
     mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
     mapper.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false)
 
-
     //val dataPath = path.getPath
     //LOG.info(s"Getting data from $dataPath ...")
 
     rawData
-//    env.readTextFile(dataPath)
+      //    env.readTextFile(dataPath)
       // parse json
+      .map { line =>
+        LOG.info("Line: " + line)
+        line
+      }
       .map(line => parse(line, mapper)).filter(_.isDefined).map(_.get).name("Parsing JSON string")
       // set event timestamp
       .assignTimestampsAndWatermarks(new TweetTimestampAndWatermarkGenerator).name("Getting event time")
@@ -83,6 +87,10 @@ object StyxTwitterAnalysisJob extends App with Logging {
         .replaceAll("[~!@#$^%&*\\\\(\\\\)_+={}\\\\[\\\\]|;:\\\"'<,>.?`/\\n\\\\\\\\-]", "").toLowerCase()
         // create words
         .split("[ \\t]+")).name("Creating word list")
+      .map { line =>
+        LOG.info("Words:" + line)
+        line
+      }
       .filter(word => !ignore.contains(word) && word.length >= minWordL)
       .map(s => Tuple2(s, 1)).name("Creating tuples")
       // group by word
@@ -105,8 +113,17 @@ object StyxTwitterAnalysisJob extends App with Logging {
   }
 
   private def parse(line: String, mapper: ObjectMapper): Option[Tweet] = {
-    val tweet = mapper.readValue(line, classOf[Tweet])    // .replaceAll("[$\\[\\]{}]", "")
-    if (tweet == null || tweet.messageText == null || tweet.creationDate == null) None else Some(tweet)
+    try {
+      val tweet = mapper.readValue(line, classOf[Tweet]) // .replaceAll("[$\\[\\]{}]", "")
+      LOG.info(s"Parsed tweet ${tweet.messageText}")
+      val maybeTweet = if (tweet == null || tweet.messageText == null || tweet.creationDate == null) None else Some(tweet)
+      maybeTweet
+    }
+    catch {
+      case t: Throwable =>
+        LOG.error(s"Unable to parse tweet $line", t)
+        None
+    }
   }
 
   private def print(trendPerPeriod: (String, List[Trend])): Unit = {

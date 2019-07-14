@@ -120,8 +120,8 @@
                             <tr>
                                 <td>Marketing</td>
                                 <td>Tweets</td>
-                                <td>Trend/sentiment analysis</td>
-                                <td>Actionable insights / Promoted Tweets</td>
+                                <td>Trend analysis</td>
+                                <td>Actionable insights</td>
                             </tr>
                             <tr>
                                 <td>Finance</td>
@@ -142,12 +142,6 @@
                                 <td>Alert doctor</td>
                             </tr>
                             <tr>
-                                <td>Government</td>
-                                <td>Tweets</td>
-                                <td>Sentiment/troooo,end analysis</td>
-                                <td>Social media response</td>
-                            </tr>
-                            <tr>
                                 <td>Traffic</td>
                                 <td>Cars passing</td>
                                 <td>Traffic jam</td>
@@ -164,12 +158,6 @@
                                 <td>Player actions</td>
                                 <td>Key combos</td>
                                 <td>Action on screen</td>
-                            </tr>
-                            <tr>
-                                <td>Retail</td>
-                                <td>Page visits</td>
-                                <td>Shopping behavior</td>
-                                <td>Reminder</td>
                             </tr>
                         </tbody>
                     </table>
@@ -230,7 +218,6 @@
                         <li class="fragment" data-fragment-index="1">The basic pattern of a job is:
                             <ul class="fragment" data-fragment-index="1">
                                 <li>Connect to the stream and consume events</li>
-                                <li>Deserialize data</li>
                                 <li>Group and gather events (windowing)</li>
                                 <li>Perform analysis on each window</li>
                                 <li>Write the result to another stream (sink)</li>
@@ -284,9 +271,7 @@ def getData(env: StreamExecutionEnvironment): DataStream[MyEvent] = {
                                 <b>&rAarr; processing time</b></span></li>
                     </ul>
                     <img src="img/EventTime.png" class="fragment" data-fragment-index="2" />
-                    <pre class="fragment" data-fragment-index="3"><code data-trim>
-                    env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
-                </code></pre>
+
                     <aside class="notes">
                         Events can reach us <i>out-of-order</i>; by looking at the event time we can still detect the original
                         order</li>
@@ -297,6 +282,87 @@ def getData(env: StreamExecutionEnvironment): DataStream[MyEvent] = {
                     <h2>Out-of-orderness</h2>
                     <img src="img/EventTime_StarWars.png" class="stretch" /><br>
                     <img src="img/Star_Wars_logo.png" style="width:200px;" />
+                </section>
+
+                <section>
+                    <h2>Watermarks</h2>
+                    <ul>
+                        <li><i>Watermarks</i> are timestamps that trigger the computation of the window</li>
+                        <li>They are generated at a time that allows a bit of slack for <i>late events</i></li>
+                        <li class="fragment" data-fragment-index="1">By default, any event that reaches the processor later
+                            than the watermark, but with an event time that should belong to the former window, is <i>ignored</i></li>
+                        <li class="fragment" data-fragment-index="2">It's possible to allow late events to trigger re-computation
+                            of a window by setting the <i>allowedLateness</i> property</li>
+                    </ul>
+                    <aside class="notes">
+                        How do we know when to calculate a window?<br> Watermarks assert that all earlier events have (probably)
+                        arrived<br> (other triggers are also possible: processing time, punctuations (data-dependent).<br>                        IF
+                        eventTime < watermark THEN Ignore ELSE Process Example: tumbling window of one hour, watermark is
+                            1 minute. af 14:02 an event comes in with an event time of 13:59 </aside>
+                </section>
+
+                <section>
+                    <h2>Watermarks</h2>
+                    <ul>
+                        <li>In Flink, we inject a <i>Timestamp Assigner & Watermark Generator</i></li>
+                    </ul>
+                    <pre><code data-trim>
+                    createKafkaEventStream(env, readTopicDef, kafkaProperties, jobName)
+                        .assignTimestampsAndWatermarks(
+                             new TweetTimestampAndWatermarkGenerator)
+                </code></pre>
+
+                    <aside class="notes">
+                        Example: tumbling window of one hour, watermark is 1 minute. af 14:02 an event comes in with an event time of 13:59
+                    </aside>
+                </section>
+
+                <section>
+                    <h2>Watermarks</h2>
+                    <pre><code data-trim>
+class TweetTimestampAndWatermarkGenerator
+           extends AssignerWithPeriodicWatermarks[Tweet] {
+  val maxOutOfOrderness = 1000L // 1.0 seconds
+  var currentMaxTimestamp: Long = 0L
+
+  override def extractTimestamp(tweet: Tweet,
+                                previousElementTimestamp: Long) = {
+    val timestamp = DateTime.parse(tweet.creationDate,
+           DateTimeFormat.forPattern(pattern)).getMillis
+    currentMaxTimestamp = Math.max(timestamp, currentMaxTimestamp)
+    timestamp
+  }
+
+  override def getCurrentWatermark: Watermark = {
+    // return the watermark as current highest timestamp
+    // minus the out-of-orderness bound
+    new Watermark(currentMaxTimestamp - maxOutOfOrderness)
+  }
+}
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>Event Time and Watermarks</h2>
+                    <pre><code data-trim>
+                    class TimedEventWatermarkExtractor
+                       extends AssignerWithPeriodicWatermarks[TimedEvent]() {
+
+                        // specify the event time
+                        override def extractTimestamp(element: TimedEvent,
+                                        previousElementTimestamp: Long): Long = {
+                            // set event time to 'eventTime' field in events
+                            element.eventTime.getMillis
+                        }
+
+                        // this method is called to emit a watermark every time the
+                        // ExecutionConfig.setAutoWatermarkInterval(...) interval occurs
+                        override def getCurrentWatermark: Watermark = {
+                            // one second delay for processing of window
+                            new Watermark(System.currentTimeMillis() - 1000)
+                      }
+                    }
+                </code></pre>
                 </section>
 
                 <section>
@@ -336,20 +402,22 @@ def getData(env: StreamExecutionEnvironment): DataStream[MyEvent] = {
                 </section>
 
                 <section>
-                    <h2>Watermarks</h2>
-                    <ul>
-                        <li><i>Watermarks</i> are timestamps that trigger the computation of the window</li>
-                        <li>They are generated at a time that allows a bit of slack for <i>late events</i></li>
-                        <li class="fragment" data-fragment-index="1">By default, any event that reaches the processor later
-                            than the watermark, but with an event time that should belong to the previous window, is ignored</li>
-                        <li class="fragment" data-fragment-index="2">It's possible to allow late events to trigger re-computation
-                            of a window by setting the <i>allowedLateness</i> property</li>
-                    </ul>
-                    <aside class="notes">
-                        How do we know when to calculate a window?<br> Watermarks assert that all earlier events have (probably)
-                        arrived<br> (other triggers are also possible: processing time, punctuations (data-dependent).<br>                        IF
-                        eventTime < watermark THEN Ignore ELSE Process Example: tumbling window of one hour, watermark is
-                            1 minute. af 14:02 an event comes in with an event time of 13:59 </aside>
+                    <h2>Windows</h2>
+                    <pre><code data-trim>
+// in: (word, count)
+// out: (timestamp of end of window, word, count), key (word), window
+class WordCountWindowFunction extends
+        WindowFunction[(String, Int), WordCount, String, TimeWindow] {
+  def apply(key: String,
+            window: TimeWindow,
+            input: Iterable[(String, Int)],
+            out: Collector[WordCount]): Unit = {
+    val count = input.count(_ => true)
+    out.collect(WordCount(window.getEnd, key, count))
+  }
+}
+                    </code>
+                    </pre>
                 </section>
 
                 <section>
@@ -497,7 +565,7 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
         </div>
 
         <div id="footer">
-            <img src="img/oscon_footer.png" style="width:100%; max-width:100%;">
+            <img src="img/oscon_footer2.png" style="width:100%; max-width:100%;">
         </div>
 
     </div> <!-- reveal -->
