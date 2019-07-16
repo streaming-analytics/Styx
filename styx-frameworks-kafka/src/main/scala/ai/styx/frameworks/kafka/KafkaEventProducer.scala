@@ -20,10 +20,11 @@ class KafkaEventProducer(properties: Properties)
 class KafkaStringProducer(properties: Properties)
   extends org.apache.kafka.clients.producer.KafkaProducer[String, String](properties) with MessageBusProducer {
 
+  val topic = properties.getProperty("topic")
   override type T = String
 
   def send(message: String): Unit = {
-    val record = new ProducerRecord[String, String](properties.getProperty("topic"), message)
+    val record = new ProducerRecord[String, String](topic, message)
     send(record)
   }
 }

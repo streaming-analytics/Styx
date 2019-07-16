@@ -19,7 +19,7 @@ class KafkaConfiguration(config: Configuration) {
   lazy val bootstrapServers: String = kafkaConfig.getString("bootstrap.servers")
   lazy val groupId: String = kafkaConfig.getString("group.id")
   lazy val offsetReset: String = kafkaConfig.getString("offset.reset")
-  lazy val topics: String = kafkaConfig.getString("topics")
+  lazy val topic: String = kafkaConfig.getString("topic")
 }
 
 class Configuration {

@@ -51,7 +51,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
   implicit val typeInfo6 = TypeInformation.of(classOf[WordCount])
 
   val stream = env
-    .addSource(new FlinkKafkaConsumer[String](config.kafkaConfig.topics, new SimpleStringSchema(), properties))
+    .addSource(new FlinkKafkaConsumer[String](config.kafkaConfig.topic, new SimpleStringSchema(), properties))
 
   ///// part 1: count the words per period /////
   val wordsStream: DataStream[WordCount] = wordCount(env, stream, minimumWordLength, evaluationPeriodInSeconds, wordsToIgnore)
@@ -127,7 +127,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
   }
 
   private def print(trendPerPeriod: (String, List[Trend])): Unit = {
-    println("### Trending topics of " + trendPerPeriod._1)
+    println("### Trending topic of " + trendPerPeriod._1)
     for (i <- trendPerPeriod._2.indices) {
       val trend = trendPerPeriod._2(i)
       println(s" ${i + 1}: ${trend.word.toUpperCase()}, slope=${trend.slope}")

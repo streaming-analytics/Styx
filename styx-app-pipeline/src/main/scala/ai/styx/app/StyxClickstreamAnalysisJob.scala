@@ -35,7 +35,7 @@ object StyxClickstreamAnalysisJob extends App with Logging {
   implicit val typeInfoListString = TypeInformation.of(classOf[List[CategoryCount]])
 
   val stream = env
-    .addSource(new FlinkKafkaConsumer[String](config.kafkaConfig.topics, new SimpleStringSchema(), properties))
+    .addSource(new FlinkKafkaConsumer[String](config.kafkaConfig.topic, new SimpleStringSchema(), properties))
     .map(Click.fromString(_))
     // set event timestamp
     .assignTimestampsAndWatermarks(new ClickTimestampAndWatermarkGenerator).name("Getting event time")
