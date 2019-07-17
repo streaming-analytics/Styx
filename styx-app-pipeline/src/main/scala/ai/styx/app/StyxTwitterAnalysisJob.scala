@@ -1,6 +1,5 @@
 package ai.styx.app
 
-import java.net.URL
 import java.util.Properties
 
 import ai.styx.common.{Configuration, Logging}
@@ -8,15 +7,12 @@ import ai.styx.domain.events.{Trend, Tweet, WordCount}
 import ai.styx.usecases.twitter.{TrendsWindowFunction, TweetTimestampAndWatermarkGenerator, WordCountWindowFunction}
 import org.apache.flink.api.common.serialization.SimpleStringSchema
 import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows
 import org.apache.flink.streaming.api.windowing.time.Time
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer
-import org.joda.time.{DateTime, Period}
-
-import scala.util.Try
+import org.joda.time.DateTime
 
 object StyxTwitterAnalysisJob extends App with Logging {
   // configuration
@@ -64,11 +60,6 @@ object StyxTwitterAnalysisJob extends App with Logging {
   LOG.info("Done!")
 
   private def wordCount(env: StreamExecutionEnvironment, rawData: DataStream[String], minWordL: Int, seconds: Int, ignore: Array[String]): DataStream[WordCount] = {
-    val mapper: ObjectMapper = new ObjectMapper()
-    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-    mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
-    mapper.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false)
-
     //val dataPath = path.getPath
     //LOG.info(s"Getting data from $dataPath ...")
 
@@ -79,7 +70,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
         LOG.info("Line: " + line)
         line
       }
-      .map(line => parse(line, mapper)).filter(_.isDefined).map(_.get).name("Parsing JSON string")
+      .map(line => Tweet.parse(line)).filter(_.isDefined).map(_.get).name("Parsing JSON string")
       // set event timestamp
       .assignTimestampsAndWatermarks(new TweetTimestampAndWatermarkGenerator).name("Getting event time")
       .flatMap(_.messageText
@@ -110,20 +101,6 @@ object StyxTwitterAnalysisJob extends App with Logging {
       .addSink(x => x.foreach { trendPerPeriod =>
         print(trendPerPeriod)
       }).name("Printing results")
-  }
-
-  private def parse(line: String, mapper: ObjectMapper): Option[Tweet] = {
-    try {
-      val tweet = mapper.readValue(line, classOf[Tweet]) // .replaceAll("[$\\[\\]{}]", "")
-      LOG.info(s"Parsed tweet ${tweet.messageText}")
-      val maybeTweet = if (tweet == null || tweet.messageText == null || tweet.creationDate == null) None else Some(tweet)
-      maybeTweet
-    }
-    catch {
-      case t: Throwable =>
-        LOG.error(s"Unable to parse tweet $line", t)
-        None
-    }
   }
 
   private def print(trendPerPeriod: (String, List[Trend])): Unit = {

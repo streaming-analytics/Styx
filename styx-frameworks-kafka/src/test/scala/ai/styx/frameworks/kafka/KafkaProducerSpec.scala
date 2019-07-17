@@ -43,6 +43,6 @@ class KafkaProducerSpec extends BaseSpec with EmbeddedKafka {
 
   it should "send a domain object to the Kafka bus" in {
     val event = TestEvent(writeTopic, now, Map("element" -> "test2"))
-    producer.send(event)
+    producer.send(writeTopic, event)
   }
 }

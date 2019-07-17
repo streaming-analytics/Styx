@@ -1,30 +1,32 @@
 package ai.styx.frameworks.kafka
 
 import java.util.Properties
+import java.util.concurrent.TimeUnit
 
 import ai.styx.domain.events.BaseEvent
 import ai.styx.frameworks.interfaces.MessageBusProducer
-import org.apache.kafka.clients.producer.ProducerRecord
+import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 
-class KafkaEventProducer(properties: Properties)
-  extends org.apache.kafka.clients.producer.KafkaProducer[String, Map[String, AnyRef]](properties) with MessageBusProducer {
+class KafkaEventProducer(properties: Properties) extends MessageBusProducer {
+  private val producer = new KafkaProducer[String, Map[String, AnyRef]](properties)
 
   override type T = BaseEvent
 
-  def send(message: BaseEvent): Unit = {
+  def send(topic: String, message: T): Unit = {
     val record = new ProducerRecord[String, Map[String, AnyRef]](message.topic, message.payload)
-    send(record)
+    producer.send(record)
   }
 }
 
-class KafkaStringProducer(properties: Properties)
-  extends org.apache.kafka.clients.producer.KafkaProducer[String, String](properties) with MessageBusProducer {
+class KafkaStringProducer(properties: Properties) extends MessageBusProducer {
+  private val producer = new KafkaProducer[String, String](properties)
 
-  val topic = properties.getProperty("topic")
   override type T = String
 
-  def send(message: String): Unit = {
+  def send(topic: String, message: T): Unit = {
     val record = new ProducerRecord[String, String](topic, message)
-    send(record)
+    producer.send(record)
   }
+
+  def close(timeout: Long, timeUnit: TimeUnit): Unit = producer.close(timeout, timeUnit)
 }

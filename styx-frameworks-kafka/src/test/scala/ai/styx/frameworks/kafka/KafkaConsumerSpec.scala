@@ -36,6 +36,6 @@ class KafkaConsumerSpec extends BaseSpec with EmbeddedKafka {
 
     //val event = TestEvent(writeTopic, now, Map("element" -> "test3"))
 
-    producer.send("hello") //event)
+    producer.send(writeTopic, "hello") //event)
   }
 }

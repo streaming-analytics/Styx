@@ -20,6 +20,8 @@ class KafkaConfiguration(config: Configuration) {
   lazy val groupId: String = kafkaConfig.getString("group.id")
   lazy val offsetReset: String = kafkaConfig.getString("offset.reset")
   lazy val topic: String = kafkaConfig.getString("topic")
+
+  // TODO: consumer and producer
 }
 
 class Configuration {
