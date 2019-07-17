@@ -12,3 +12,4 @@ shared-local-instance.db
 *.db
 *.pdf
 *.iml
+*.json
