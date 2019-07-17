@@ -24,7 +24,6 @@ class TrendsWindowFunction(evaluationPeriodInSeconds: Int, dateTimePattern: Stri
       .filter(_.timeStamp == window.getEnd)
       .foreach {
       wordCount =>
-        LOG.info(s"Calculating window for ${wordCount.timeStamp}")
         // find pair in the previous period
         val previous = input.find(x => x.word == wordCount.word && x.timeStamp == previousMillis).getOrElse(WordCount(previousMillis, wordCount.word, 0))    // no word in previous period: set previous count = 0
         topList += Trend(s"${previousTime.toString(dateTimePattern)} to ${time.toString(dateTimePattern)}", wordCount.word, wordCount.count - previous.count)

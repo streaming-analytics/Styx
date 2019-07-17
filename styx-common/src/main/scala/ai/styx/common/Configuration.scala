@@ -14,7 +14,7 @@ class SparkConfiguration(config: Configuration) {
 }
 
 class KafkaConfiguration(config: Configuration) {
-  private lazy val kafkaConfig = config.getConfig("kafka")
+  private lazy val kafkaConfig = config.getConfig("kafka.consumer")
 
   lazy val bootstrapServers: String = kafkaConfig.getString("bootstrap.servers")
   lazy val groupId: String = kafkaConfig.getString("group.id")

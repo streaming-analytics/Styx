@@ -8,14 +8,16 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.{Deserial
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 
+import scala.beans.BeanProperty
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 case class Tweet (
                    //@JsonProperty("name") name: String = null,
-                   @JsonProperty("created_at") created_at: String = null,
-                   @JsonProperty("text") messageText: String = null
+                   @BeanProperty @JsonProperty("created_at") created_at: String = null,
+                   @BeanProperty @JsonProperty("text") messageText: String = null
                    // no other fields needed for now
 ) {
-  def created =
+  def created: Option[DateTime] =
     try {
       // format: Sat Sep 10 22:23:38 +0000 2011
       Some(DateTime.parse(created_at, DateTimeFormat.forPattern("EE MMM dd HH:mm:ss Z yyyy").withLocale(Locale.ENGLISH)))
@@ -23,6 +25,8 @@ case class Tweet (
     catch {
       case _: Throwable => None
     }
+
+  def toJson(mapper: ObjectMapper): String = mapper.writeValueAsString(this)
 }
 
 object Tweet extends Logging {

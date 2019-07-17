@@ -8,6 +8,7 @@ import ai.styx.usecases.twitter.{TrendsWindowFunction, TweetTimestampAndWatermar
 import org.apache.flink.api.common.serialization.SimpleStringSchema
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.TimeCharacteristic
+import org.apache.flink.streaming.api.datastream.DataStreamSink
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows
 import org.apache.flink.streaming.api.windowing.time.Time
@@ -17,10 +18,9 @@ import org.joda.time.DateTime
 object StyxTwitterAnalysisJob extends App with Logging {
   // configuration
   implicit val config: Configuration = Configuration.load()
-  val dataSourcePath = "/data/sample1.json"
   val minimumWordLength = 5
   val wordsToIgnore = Array("would", "could", "should", "sometimes", "maybe", "perhaps", "nothing", "please", "today", "twitter", "everyone", "people", "think", "where", "about", "still", "youre")
-  val evaluationPeriodInSeconds = 2 // 60 * 60 // 1 hour
+  val evaluationPeriodInSeconds = 3
   val topN = 5
   val dateTimePattern = "yyyy-MM-dd HH:mm:sss"
 
@@ -36,15 +36,12 @@ object StyxTwitterAnalysisJob extends App with Logging {
   properties.setProperty("bootstrap.servers", config.kafkaConfig.bootstrapServers)
   properties.setProperty("group.id", config.kafkaConfig.groupId)
 
-  // load the data
-  //val path = getClass.getResource(dataSourcePath)
-
-  implicit val typeInfo1 = TypeInformation.of(classOf[Tweet])
-  implicit val typeInfo2 = TypeInformation.of(classOf[Option[Tweet]])
-  implicit val typeInfo3 = TypeInformation.of(classOf[Option[String]])
-  implicit val typeInfo4 = TypeInformation.of(classOf[String])
-  implicit val typeInfo5 = TypeInformation.of(classOf[(String, Int)])
-  implicit val typeInfo6 = TypeInformation.of(classOf[WordCount])
+  implicit val typeInfo1: TypeInformation[Tweet] = TypeInformation.of(classOf[Tweet])
+  implicit val typeInfo2: TypeInformation[Option[Tweet]] = TypeInformation.of(classOf[Option[Tweet]])
+  implicit val typeInfo3: TypeInformation[Option[String]] = TypeInformation.of(classOf[Option[String]])
+  implicit val typeInfo4: TypeInformation[String] = TypeInformation.of(classOf[String])
+  implicit val typeInfo5: TypeInformation[(String, Int)] = TypeInformation.of(classOf[(String, Int)])
+  implicit val typeInfo6: TypeInformation[WordCount] = TypeInformation.of(classOf[WordCount])
 
   val stream = env
     .addSource(new FlinkKafkaConsumer[String](config.kafkaConfig.topic, new SimpleStringSchema(), properties))
@@ -60,16 +57,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
   LOG.info("Done!")
 
   private def wordCount(env: StreamExecutionEnvironment, rawData: DataStream[String], minWordL: Int, seconds: Int, ignore: Array[String]): DataStream[WordCount] = {
-    //val dataPath = path.getPath
-    //LOG.info(s"Getting data from $dataPath ...")
-
     rawData
-      //    env.readTextFile(dataPath)
-      // parse json
-      .map { line =>
-        LOG.info("Line: " + line)
-        line
-      }
       .map(line => Tweet.parse(line)).filter(_.isDefined).map(_.get).name("Parsing JSON string")
       // set event timestamp
       .assignTimestampsAndWatermarks(new TweetTimestampAndWatermarkGenerator).name("Getting event time")
@@ -78,10 +66,6 @@ object StyxTwitterAnalysisJob extends App with Logging {
         .replaceAll("[~!@#$^%&*\\\\(\\\\)_+={}\\\\[\\\\]|;:\\\"'<,>.?`/\\n\\\\\\\\-]", "").toLowerCase()
         // create words
         .split("[ \\t]+")).name("Creating word list")
-      .map { line =>
-        LOG.info("Words:" + line)
-        line
-      }
       .filter(word => !ignore.contains(word) && word.length >= minWordL)
       .map(s => Tuple2(s, 1)).name("Creating tuples")
       // group by word
@@ -92,11 +76,11 @@ object StyxTwitterAnalysisJob extends App with Logging {
       .apply(new WordCountWindowFunction()).name("Counting words")
   }
 
-  private def trendsAnalysis(wordsStream: DataStream[WordCount], seconds: Int, topN: Int, dtPattern: String) = {
-    implicit val typeInfo1 = TypeInformation.of(classOf[Map[String, List[Trend]]])
+  private def trendsAnalysis(wordsStream: DataStream[WordCount], seconds: Int, topN: Int, dtPattern: String): DataStreamSink[Map[String, List[Trend]]] = {
+    implicit val typeInfo1: TypeInformation[Map[String, List[Trend]]] = TypeInformation.of(classOf[Map[String, List[Trend]]])
 
     wordsStream
-      .windowAll(TumblingEventTimeWindows.of(Time.seconds(seconds * 2))) // when moving to stream processing: switch to sliding window
+      .windowAll(TumblingEventTimeWindows.of(Time.seconds(seconds * 2)))
       .apply(new TrendsWindowFunction(seconds, dtPattern, topN)).name("Calculating trends")
       .addSink(x => x.foreach { trendPerPeriod =>
         print(trendPerPeriod)

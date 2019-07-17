@@ -1,6 +1,5 @@
 package ai.styx.app.demo
 
-import java.io.BufferedReader
 import java.util.{Locale, Properties}
 import java.util.concurrent.TimeUnit
 
@@ -8,6 +7,7 @@ import ai.styx.common.{ConfigUtils, Configuration, Logging}
 import ai.styx.domain.events.Tweet
 import ai.styx.frameworks.kafka.{KafkaProducerFactory, KafkaStringProducer}
 import com.typesafe.config.{Config, ConfigFactory}
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 
@@ -36,27 +36,22 @@ object KafkaDataGenerator extends App with Logging {
 
   producer.send(topic, "test 1234")
 
+  val mapper: ObjectMapper = new ObjectMapper()
+  mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+  mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
+  mapper.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false)
+
   while (true) {
     val i = Random.nextInt(tweets.length - 1)
 
     val now = DateTime.now.toString(DateTimeFormat.forPattern("EE MMM dd HH:mm:ss Z yyyy").withLocale(Locale.ENGLISH))
 
-    val tweet = tweets(i).copy(created_at = now).toString
+    val tweet = tweets(i).copy(created_at = now).toJson(mapper)
     producer.send(topic, tweet)
 
-    Thread.sleep(100)
+    Thread.sleep(50)  // 20 per second
     LOG.info("Send tweet: " + tweet)
   }
 
   producer.close(1000L, TimeUnit.MILLISECONDS)
-
-  // loop
-
-  // generate x tweets per second
-
-  // select a random tweet from the tweets file
-
-  // adjust the created (event time)
-
-  // publish the tweet
 }

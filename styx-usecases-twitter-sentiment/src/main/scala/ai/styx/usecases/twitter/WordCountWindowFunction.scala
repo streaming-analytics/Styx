@@ -10,7 +10,6 @@ import org.apache.flink.util.Collector
 class WordCountWindowFunction extends WindowFunction[(String, Int), WordCount, String, TimeWindow] with Logging {
   def apply(key: String, window: TimeWindow, input: Iterable[(String, Int)], out: Collector[WordCount]): Unit = {
     val count = input.count(_ => true)
-    LOG.info("Count: " + count)
     out.collect(WordCount(window.getEnd, key, count))
   }
 }
