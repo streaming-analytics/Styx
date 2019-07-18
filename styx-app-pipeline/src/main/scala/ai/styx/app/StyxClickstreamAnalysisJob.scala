@@ -22,6 +22,7 @@ object StyxClickstreamAnalysisJob extends App with Logging {
   env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 
   // load the data
+  // TODO: refactor, similar as Twitter analysis
   val properties = new Properties()
   properties.setProperty("bootstrap.servers", config.kafkaConfig.bootstrapServers)
   properties.setProperty("group.id", config.kafkaConfig.groupId)
@@ -35,7 +36,7 @@ object StyxClickstreamAnalysisJob extends App with Logging {
   implicit val typeInfoListString = TypeInformation.of(classOf[List[CategoryCount]])
 
   val stream = env
-    .addSource(new FlinkKafkaConsumer[String](config.kafkaConfig.topic, new SimpleStringSchema(), properties))
+    .addSource(new FlinkKafkaConsumer[String](config.kafkaConfig.rawDataTopic, new SimpleStringSchema(), properties))
     .map(Click.fromString(_))
     // set event timestamp
     .assignTimestampsAndWatermarks(new ClickTimestampAndWatermarkGenerator).name("Getting event time")

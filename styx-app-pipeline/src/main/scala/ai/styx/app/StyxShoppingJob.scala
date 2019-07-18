@@ -1,6 +1,6 @@
 package ai.styx.app
 
-import ai.styx.common.{ConfigUtils, Logging}
+import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.{BasePatternEvent, BaseRawEvent, BaseTransactionEvent}
 import ai.styx.frameworks.kafka.KafkaConsumerFactory
 import ai.styx.usecases.shopping.CepFunction
@@ -20,8 +20,7 @@ object StyxShoppingJob extends App with Logging {
 
     implicit val info = TypeInformation.of(BasePatternEvent.getClass)
 
-    val config = ConfigFactory.load()
-    val readProperties = ConfigUtils.propertiesFromConfig(config.getConfig("kafka"))
+    implicit val config: Configuration = Configuration.load()
 
     val env = StreamExecutionEnvironment.getExecutionEnvironment
     env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)  // configure event-time characteristics
@@ -29,9 +28,9 @@ object StyxShoppingJob extends App with Logging {
     env.setParallelism(1)
 
     //val rawEventFromPayload: (String, Map[String, String]) => BaseEvent =
-     // (topic, payload) => BaseEvent(topic, payload)
+     // (rawDataTopic, payload) => BaseEvent(rawDataTopic, payload)
 
-    val consumer = new KafkaConsumerFactory().createMessageBusConsumer(readProperties)
+    val consumer = new KafkaConsumerFactory().createMessageBusConsumer(config.kafkaConsumerProperties)
 
     val input = env.addSource(consumer)
 

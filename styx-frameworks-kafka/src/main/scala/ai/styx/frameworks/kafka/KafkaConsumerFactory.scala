@@ -14,7 +14,7 @@ class KafkaConsumerFactory extends MessageBusConsumerFactory {
     //val consumer = new FlinkKafkaConsumer011[BaseEvent]("topic1", schema, readProperties)
 
     val schema = new SimpleStringSchema()
-    val consumer = new FlinkKafkaConsumer011[String](properties.getProperty("topic"), schema, properties)
+    val consumer = new FlinkKafkaConsumer011[String](properties.getProperty("rawDataTopic"), schema, properties)
 
     consumer
   }

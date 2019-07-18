@@ -1,6 +1,8 @@
 package ai.styx.common
 
-import com.typesafe.config.{Config, ConfigFactory}
+import java.util.Properties
+import com.typesafe.config.{Config, ConfigFactory, ConfigValueType}
+import scala.collection.JavaConverters._
 
 class SparkConfiguration(config: Configuration) {
   private lazy val sparkConfig = config.getConfig("spark")
@@ -14,12 +16,15 @@ class SparkConfiguration(config: Configuration) {
 }
 
 class KafkaConfiguration(config: Configuration) {
-  private lazy val kafkaConfig = config.getConfig("kafka.consumer")
+  private lazy val kafkaConfig = config.getConfig("kafka")
 
+  // TODO: remove the following, they are injected directly in the Kafka producer/consumer
   lazy val bootstrapServers: String = kafkaConfig.getString("bootstrap.servers")
   lazy val groupId: String = kafkaConfig.getString("group.id")
   lazy val offsetReset: String = kafkaConfig.getString("offset.reset")
-  lazy val topic: String = kafkaConfig.getString("topic")
+
+  lazy val rawDataTopic: String = kafkaConfig.getString("rawDataTopic")
+  lazy val patternTopic: String = kafkaConfig.getString("patternTopic")
 
   // TODO: consumer and producer
 }
@@ -36,6 +41,9 @@ class Configuration {
   def getConfig(path: String): Config = _base.getConfig(path)
 
   lazy val kafkaConfig: KafkaConfiguration = new KafkaConfiguration(this)
+  lazy val kafkaConsumerProperties: Properties = Configuration.propertiesFromConfig(getConfig("kafka.consumer"))
+  lazy val kafkaProducerProperties: Properties = Configuration.propertiesFromConfig(getConfig("kafka.producer"))
+
   lazy val sparkConfig: SparkConfiguration = new SparkConfiguration(this)
 }
 
@@ -48,4 +56,26 @@ object Configuration {
   }
 
   def getConfig: Configuration = _config
+
+  def propertiesFromMap(properties: Map[String, String]): Properties =
+    (new Properties /: properties) {
+      case (a, (k, v)) =>
+        a.put(k, v)
+        a
+    }
+
+  def propertiesFromConfig(config: Config): Properties = {
+    propertiesFromMap(config.entrySet().asScala.map(entry => {
+      val value = entry.getValue
+      val valueStr = value.valueType() match {
+        case ConfigValueType.OBJECT => value.unwrapped().toString
+        case ConfigValueType.LIST => value.unwrapped().toString.stripPrefix("[").stripSuffix("]")
+        case ConfigValueType.NUMBER => value.unwrapped().toString
+        case ConfigValueType.BOOLEAN => value.unwrapped().toString
+        case ConfigValueType.NULL => value.unwrapped().toString
+        case ConfigValueType.STRING => value.unwrapped().toString
+      }
+      entry.getKey -> valueStr
+    }).toMap)
+  }
 }

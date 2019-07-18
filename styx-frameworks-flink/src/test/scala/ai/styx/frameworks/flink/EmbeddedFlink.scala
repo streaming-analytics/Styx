@@ -90,7 +90,7 @@ object EmbeddedFlink extends Logging {
       cluster.submitJob(new JobGraph())
       //job.run(config, Some(jobName))
     }
-    val inputTopic: String = config.getString(jobConfigPrefix + ".read.topic")
+    val inputTopic: String = config.getString(jobConfigPrefix + ".read.rawDataTopic")
     val cepName: String = config.getString(jobConfigPrefix + ".name")
     waitUntilJobIsRunning(jobID)
   }
