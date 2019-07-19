@@ -2,7 +2,7 @@ package ai.styx.app
 
 import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.{BasePatternEvent, BaseRawEvent, BaseTransactionEvent}
-import ai.styx.frameworks.kafka.KafkaConsumerFactory
+import ai.styx.frameworks.kafka.{KafkaConsumerFactory, KafkaStringConsumer}
 import ai.styx.usecases.shopping.CepFunction
 import com.typesafe.config.ConfigFactory
 import org.apache.flink.api.common.typeinfo.TypeInformation
@@ -30,7 +30,7 @@ object StyxShoppingJob extends App with Logging {
     //val rawEventFromPayload: (String, Map[String, String]) => BaseEvent =
      // (rawDataTopic, payload) => BaseEvent(rawDataTopic, payload)
 
-    val consumer = new KafkaConsumerFactory().createMessageBusConsumer(config)
+    val consumer = KafkaConsumerFactory.createMessageBusConsumer(config).asInstanceOf[KafkaStringConsumer]
 
     val input = env.addSource(consumer)
 

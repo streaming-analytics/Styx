@@ -70,10 +70,10 @@ lazy val flinkDependencies = Seq(
 )
 
 lazy val sparkDependencies = Seq (
-  "org.apache.spark" %% "spark-core" % sparkV,
-  "org.apache.spark" %% "spark-sql" % sparkV,
-  "org.apache.spark" %% "spark-mllib" % sparkV % "runtime",
-  "org.apache.spark" %% "spark-streaming" % sparkV  // % "provided"
+  "org.apache.spark" %% "spark-core" % sparkV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
+  "org.apache.spark" %% "spark-sql" % sparkV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
+  "org.apache.spark" %% "spark-mllib" % sparkV % "runtime" exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
+  "org.apache.spark" %% "spark-streaming" % sparkV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12")  // % "provided"
 )
 
 lazy val kafkaDependencies = Seq(
