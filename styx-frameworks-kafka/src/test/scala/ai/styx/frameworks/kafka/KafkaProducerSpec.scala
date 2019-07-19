@@ -17,7 +17,7 @@ class KafkaProducerSpec extends BaseSpec with EmbeddedKafka {
     LocalKafkaTopic(topic = config.kafkaConfig.patternTopic, partitions = parallelism)
   )
 
-  val producer: KafkaEventProducer = KafkaProducerFactory.createEventProducer(config.kafkaProducerProperties).asInstanceOf[KafkaEventProducer]
+  val producer: KafkaEventProducer = KafkaFactory.createEventProducer(config.kafkaProducerProperties).asInstanceOf[KafkaEventProducer]
 
   implicit val plSer: PayloadSerializer = new PayloadSerializer
   implicit val stringSer: StringSerializer = new org.apache.kafka.common.serialization.StringSerializer

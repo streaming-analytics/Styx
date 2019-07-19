@@ -2,11 +2,13 @@ package ai.styx.app.demo
 
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+
 import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.Tweet
-import ai.styx.frameworks.kafka.{KafkaProducerFactory, KafkaStringProducer}
+import ai.styx.frameworks.kafka.{KafkaFactory, KafkaStringProducer}
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
+
 import scala.io.Source
 import scala.util.Random
 
@@ -15,7 +17,7 @@ object KafkaDataGenerator extends App with Logging {
   lazy val config: Configuration = Configuration.load()
   val topic: String = Configuration.load().kafkaConfig.rawDataTopic
 
-  val producer: KafkaStringProducer = KafkaProducerFactory.createStringProducer(config.kafkaProducerProperties).asInstanceOf[KafkaStringProducer]
+  val producer: KafkaStringProducer = KafkaFactory.createStringProducer(config.kafkaProducerProperties).asInstanceOf[KafkaStringProducer]
 
   // load data file
   val dataSourcePath = "sample.json"

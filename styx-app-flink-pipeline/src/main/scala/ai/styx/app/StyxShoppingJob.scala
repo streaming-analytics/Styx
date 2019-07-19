@@ -1,18 +1,14 @@
 package ai.styx.app
 
 import ai.styx.common.{Configuration, Logging}
-import ai.styx.domain.events.{BasePatternEvent, BaseRawEvent, BaseTransactionEvent}
-import ai.styx.frameworks.kafka.{KafkaConsumerFactory, KafkaStringConsumer}
+import ai.styx.domain.events.{BasePatternEvent, BaseTransactionEvent}
+import ai.styx.frameworks.kafka.{KafkaFactory, KafkaStringConsumer}
 import ai.styx.usecases.shopping.CepFunction
-import com.typesafe.config.ConfigFactory
 import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.api.scala._
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.joda.time.DateTime
-import ai.styx.domain.events.{BasePatternEvent, BaseTransactionEvent}
-import ai.styx.domain.events.BaseTransactionEvent
-import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.api.scala._
 
 object StyxShoppingJob extends App with Logging {
 
@@ -30,7 +26,7 @@ object StyxShoppingJob extends App with Logging {
     //val rawEventFromPayload: (String, Map[String, String]) => BaseEvent =
      // (rawDataTopic, payload) => BaseEvent(rawDataTopic, payload)
 
-    val consumer = KafkaConsumerFactory.createMessageBusConsumer(config).asInstanceOf[KafkaStringConsumer]
+    val consumer = KafkaFactory.createMessageBusConsumer(config).asInstanceOf[KafkaStringConsumer]
 
     val input = env.addSource(consumer)
 

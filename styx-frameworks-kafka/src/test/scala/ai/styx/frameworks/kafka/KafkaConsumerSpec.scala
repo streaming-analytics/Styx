@@ -16,7 +16,7 @@ class KafkaConsumerSpec extends BaseSpec with EmbeddedKafka {
     LocalKafkaTopic(topic = writeTopic, partitions = parallelism)
   )
 
-  val producer: KafkaStringProducer = KafkaProducerFactory.createStringProducer(config.kafkaProducerProperties).asInstanceOf[KafkaStringProducer]
+  val producer: KafkaStringProducer = KafkaFactory.createStringProducer(config.kafkaProducerProperties).asInstanceOf[KafkaStringProducer]
 
   implicit val plSer: PayloadSerializer = new PayloadSerializer
   implicit val stringSer: StringSerializer = new org.apache.kafka.common.serialization.StringSerializer
@@ -26,7 +26,7 @@ class KafkaConsumerSpec extends BaseSpec with EmbeddedKafka {
   // TODO
 
   "Kafka Consumer" should "receive a message" in {
-    val consumer = KafkaConsumerFactory.createMessageBusConsumer(config)
+    val consumer = KafkaFactory.createMessageBusConsumer(config)
 
     //val event = TestEvent(writeTopic, now, Map("element" -> "test3"))
 

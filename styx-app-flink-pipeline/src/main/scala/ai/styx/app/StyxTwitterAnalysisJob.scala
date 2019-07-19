@@ -2,7 +2,7 @@ package ai.styx.app
 
 import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.{Trend, Tweet, WordCount}
-import ai.styx.frameworks.kafka.{KafkaStringConsumer, KafkaConsumerFactory, KafkaProducerFactory, KafkaStringProducer}
+import ai.styx.frameworks.kafka.{KafkaFactory, KafkaStringConsumer, KafkaStringProducer}
 import ai.styx.usecases.twitter.{TrendsWindowFunction, TweetTimestampAndWatermarkGenerator, WordCountWindowFunction}
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.TimeCharacteristic
@@ -36,10 +36,10 @@ object StyxTwitterAnalysisJob extends App with Logging {
   implicit val typeInfo5: TypeInformation[(String, Int)] = TypeInformation.of(classOf[(String, Int)])
   implicit val typeInfo6: TypeInformation[WordCount] = TypeInformation.of(classOf[WordCount])
 
-  val producer = KafkaProducerFactory.createStringProducer(config.kafkaProducerProperties).asInstanceOf[KafkaStringProducer]
+  val producer = KafkaFactory.createStringProducer(config.kafkaProducerProperties).asInstanceOf[KafkaStringProducer]
 
   val stream = env
-    .addSource(KafkaConsumerFactory.createMessageBusConsumer(config).asInstanceOf[KafkaStringConsumer])
+    .addSource(KafkaFactory.createMessageBusConsumer(config).asInstanceOf[KafkaStringConsumer])
 
   ///// part 1a CEP: count the words per period /////
   val wordsStream: DataStream[WordCount] = wordCount(env, stream, minimumWordLength, evaluationPeriodInSeconds, wordsToIgnore)
