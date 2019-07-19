@@ -26,25 +26,26 @@ case class Tweet (
       case _: Throwable => None
     }
 
-  def toJson(mapper: ObjectMapper): String = mapper.writeValueAsString(this)
+  def toJson(): String = Tweet.objectMapper.writeValueAsString(this)
 }
 
 object Tweet extends Logging {
-  val mapper: ObjectMapper = new ObjectMapper()
+  private val mapper: ObjectMapper = new ObjectMapper()
   mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
   mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
   mapper.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false)
 
-  def parse(line: String): Option[Tweet] = {
+  def objectMapper = mapper
+
+  def fromJson(json: String): Option[Tweet] = {
     try {
-      val tweet = mapper.readValue(line, classOf[Tweet]) // .replaceAll("[$\\[\\]{}]", "")
-      //LOG.debug(s"Parsed tweet ${tweet.messageText}")
+      val tweet = mapper.readValue(json, classOf[Tweet]) // .replaceAll("[$\\[\\]{}]", "")
       val maybeTweet = if (tweet == null || tweet.messageText == null || tweet.created_at == null) None else Some(tweet)
       maybeTweet
     }
     catch {
       case t: Throwable =>
-        LOG.error(s"Unable to parse tweet $line", t)
+        LOG.error(s"Unable to parse JSON from tweet $json", t)
         None
     }
   }

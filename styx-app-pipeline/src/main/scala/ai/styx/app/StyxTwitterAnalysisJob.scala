@@ -62,7 +62,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
 
   private def wordCount(env: StreamExecutionEnvironment, rawData: DataStream[String], minWordL: Int, seconds: Int, ignore: Array[String]): DataStream[WordCount] = {
     rawData
-      .map(line => Tweet.parse(line)).filter(_.isDefined).map(_.get).name("Parsing JSON string")
+      .map(line => Tweet.fromJson(line)).filter(_.isDefined).map(_.get).name("Parsing JSON string")
       // set event timestamp
       .assignTimestampsAndWatermarks(new TweetTimestampAndWatermarkGenerator).name("Getting event time")
       .flatMap(_.messageText

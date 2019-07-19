@@ -1,6 +1,5 @@
 package ai.styx.domain
 
-
 case class Customer(
                      Flag: String,
                      Id: String,

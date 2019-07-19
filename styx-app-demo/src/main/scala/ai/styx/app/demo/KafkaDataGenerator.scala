@@ -1,15 +1,12 @@
 package ai.styx.app.demo
 
-import java.util.{Locale, Properties}
+import java.util.Locale
 import java.util.concurrent.TimeUnit
-
 import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.Tweet
 import ai.styx.frameworks.kafka.{KafkaProducerFactory, KafkaStringProducer}
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
-
 import scala.io.Source
 import scala.util.Random
 
@@ -20,31 +17,23 @@ object KafkaDataGenerator extends App with Logging {
 
   val producer: KafkaStringProducer = KafkaProducerFactory.createStringProducer(config.kafkaProducerProperties).asInstanceOf[KafkaStringProducer]
 
+  // load data file
   val dataSourcePath = "sample.json"
   val lines = Source.fromResource(dataSourcePath).getLines()
-
   val tweets = scala.collection.mutable.ListBuffer[Tweet]()
 
   lines.foreach(line => {
-    val tweet = Tweet.parse(line)
+    val tweet = Tweet.fromJson(line)
     if (tweet.isDefined && tweet.get.created.isDefined) tweets.append(tweet.get)
   })
 
   LOG.info(s"Loaded ${tweets.length} tweets into memory")
 
-  producer.send(topic, "test 1234")
-
-  val mapper: ObjectMapper = new ObjectMapper()
-  mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-  mapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false)
-  mapper.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false)
-
   while (true) {
     val i = Random.nextInt(tweets.length - 1)
-
     val now = DateTime.now.toString(DateTimeFormat.forPattern("EE MMM dd HH:mm:ss Z yyyy").withLocale(Locale.ENGLISH))
 
-    val tweet = tweets(i).copy(created_at = now).toJson(mapper)
+    val tweet = tweets(i).copy(created_at = now).toJson()
     producer.send(topic, tweet)
 
     Thread.sleep(50)  // 20 per second
