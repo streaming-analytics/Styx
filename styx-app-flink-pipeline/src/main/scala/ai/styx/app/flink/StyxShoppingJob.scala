@@ -1,11 +1,10 @@
-package ai.styx.app
+package ai.styx.app.flink
 
 import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.{BasePatternEvent, BaseTransactionEvent}
 import ai.styx.frameworks.kafka.{KafkaFactory, KafkaStringConsumer}
 import ai.styx.usecases.shopping.CepFunction
 import org.apache.flink.api.common.typeinfo.TypeInformation
-import org.apache.flink.api.scala._
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.joda.time.DateTime

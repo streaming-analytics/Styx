@@ -1,4 +1,4 @@
-package ai.styx.app
+package ai.styx.app.flink
 
 import java.util.Properties
 

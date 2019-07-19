@@ -1,4 +1,4 @@
-package ai.styx.app
+package ai.styx.app.flink
 
 import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.{Trend, Tweet, WordCount}
@@ -10,7 +10,6 @@ import org.apache.flink.streaming.api.datastream.DataStreamSink
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows
 import org.apache.flink.streaming.api.windowing.time.Time
-import org.joda.time.DateTime
 
 object StyxTwitterAnalysisJob extends App with Logging {
   // configuration
@@ -25,7 +24,6 @@ object StyxTwitterAnalysisJob extends App with Logging {
   LOG.info("Start!")
 
   // set up Flink
-  val startTime = DateTime.now
   val env = StreamExecutionEnvironment.getExecutionEnvironment
   env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 

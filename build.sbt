@@ -186,8 +186,14 @@ lazy val styxAppFlinkPipeline = (project in file("styx-app-flink-pipeline"))
     commonSettings,
     name := "styx-app-flink-pipeline")
 
+lazy val styxAppSparkPipeline = (project in file("styx-app-spark-pipeline"))
+  .dependsOn(styxUseCasesShopping, styxUseCasesClickStream, styxUseCasesTwitterSentiment, styxFrameworksSpark, styxFrameworksKafka)
+  .settings(
+    commonSettings,
+    name := "styx-app-spark-pipeline")
+
 lazy val styxAppDemo = (project in file("styx-app-demo"))
-  .dependsOn(styxUseCasesShopping, styxUseCasesClickStream, styxUseCasesTwitterSentiment, styxFrameworksFlink, styxFrameworksKafka)
+  .dependsOn(styxEntitiesDomain, styxFrameworksKafka)
   .settings(
     commonSettings,
     name := "styx-app-demo")
@@ -196,6 +202,7 @@ lazy val root = (project in file("."))
   .aggregate(
     styxAppDemo,
     styxAppFlinkPipeline,
+    styxAppSparkPipeline,
     styxUseCasesInterfaces,
     styxUseCasesShopping,
     styxUseCasesTwitterSentiment,
