@@ -1,19 +1,15 @@
 package ai.styx.app
 
-import java.util.Properties
-
 import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.{Trend, Tweet, WordCount}
 import ai.styx.frameworks.kafka.{KafkaStringConsumer, KafkaConsumerFactory, KafkaProducerFactory, KafkaStringProducer}
 import ai.styx.usecases.twitter.{TrendsWindowFunction, TweetTimestampAndWatermarkGenerator, WordCountWindowFunction}
-import org.apache.flink.api.common.serialization.SimpleStringSchema
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.datastream.DataStreamSink
 import org.apache.flink.streaming.api.scala.{DataStream, StreamExecutionEnvironment}
-import org.apache.flink.streaming.api.windowing.assigners.{SlidingEventTimeWindows, TumblingEventTimeWindows}
+import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows
 import org.apache.flink.streaming.api.windowing.time.Time
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer
 import org.joda.time.DateTime
 
 object StyxTwitterAnalysisJob extends App with Logging {
@@ -91,7 +87,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
       .addSink(z =>
       z.map(trendPerPeriod => {
         val topTrend = trendPerPeriod._2.head.word
-        producer.send(config.kafkaConfig.rawDataTopic, topTrend)
+        producer.send(config.kafkaConfig.patternTopic, topTrend)
         topTrend
       }
       ))
