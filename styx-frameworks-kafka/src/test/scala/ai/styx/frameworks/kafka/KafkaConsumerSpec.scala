@@ -1,9 +1,6 @@
 package ai.styx.frameworks.kafka
 
-import java.util.Properties
-
 import ai.styx.common.{BaseSpec, Configuration}
-import com.typesafe.config.{Config, ConfigFactory}
 import org.apache.kafka.common.serialization.StringSerializer
 
 class KafkaConsumerSpec extends BaseSpec with EmbeddedKafka {
@@ -29,7 +26,7 @@ class KafkaConsumerSpec extends BaseSpec with EmbeddedKafka {
   // TODO
 
   "Kafka Consumer" should "receive a message" in {
-    val consumer = new KafkaConsumerFactory().createMessageBusConsumer(config.kafkaConsumerProperties)
+    val consumer = KafkaConsumerFactory.createMessageBusConsumer(config)
 
     //val event = TestEvent(writeTopic, now, Map("element" -> "test3"))
 

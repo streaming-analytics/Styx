@@ -15,7 +15,7 @@ val cassandraV = "3.11.1"
 val cassandraDriverV = "3.3.2"
 val cassandraUnitV = "3.3.0.2"
 val kafkaV = "2.1.0"
-val sparkV = "2.4.0"
+val sparkV = "2.4.3"
 val embeddedKafkaV = "1.0.0"
 val codehaleMetricsV = "3.0.2"
 val jpmmlV = "1.4.11"
@@ -67,6 +67,13 @@ lazy val flinkDependencies = Seq(
   "org.apache.flink" %% "flink-clients" % flinkV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
   "org.apache.flink" % "flink-metrics-dropwizard" % flinkV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
   "org.apache.flink" %% "flink-test-utils" % flinkV % Test exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12")
+)
+
+lazy val sparkDependencies = Seq (
+  "org.apache.spark" %% "spark-core" % sparkV,
+  "org.apache.spark" %% "spark-sql" % sparkV,
+  "org.apache.spark" %% "spark-mllib" % sparkV % "runtime",
+  "org.apache.spark" %% "spark-streaming" % sparkV  // % "provided"
 )
 
 lazy val kafkaDependencies = Seq(
@@ -126,7 +133,8 @@ lazy val styxFrameworksFlink = (project in file("styx-frameworks-flink"))
   .settings(
   commonSettings,
   name := "styx-frameworks-flink",
-  libraryDependencies ++= flinkDependencies)
+  libraryDependencies ++= flinkDependencies ++ sparkDependencies)
+// TODO: remove spark, move to new module
 
 lazy val styxFrameworksKafka = (project in file("styx-frameworks-kafka"))
   .dependsOn(styxFrameworksInterfaces, styxFrameworksFlink)

@@ -30,7 +30,7 @@ object StyxShoppingJob extends App with Logging {
     //val rawEventFromPayload: (String, Map[String, String]) => BaseEvent =
      // (rawDataTopic, payload) => BaseEvent(rawDataTopic, payload)
 
-    val consumer = new KafkaConsumerFactory().createMessageBusConsumer(config.kafkaConsumerProperties)
+    val consumer = new KafkaConsumerFactory().createMessageBusConsumer(config)
 
     val input = env.addSource(consumer)
 

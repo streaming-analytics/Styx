@@ -1,7 +1,7 @@
 package ai.styx.frameworks.interfaces
 
-import java.util.Properties
+import ai.styx.common.Configuration
 
 trait MessageBusConsumerFactory {
-  def createMessageBusConsumer(properties: Properties): Any
+  def createMessageBusConsumer(config: Configuration): MessageBusConsumer
 }
