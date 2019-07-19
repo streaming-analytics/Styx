@@ -133,8 +133,15 @@ lazy val styxFrameworksFlink = (project in file("styx-frameworks-flink"))
   .settings(
   commonSettings,
   name := "styx-frameworks-flink",
-  libraryDependencies ++= flinkDependencies ++ sparkDependencies)
+  libraryDependencies ++= flinkDependencies)
 // TODO: remove spark, move to new module
+
+lazy val styxFrameworksSpark = (project in file("styx-frameworks-spark"))
+  .dependsOn(styxFrameworksInterfaces)
+  .settings(
+    commonSettings,
+    name := "styx-frameworks-spark",
+    libraryDependencies ++= sparkDependencies)
 
 lazy val styxFrameworksKafka = (project in file("styx-frameworks-kafka"))
   .dependsOn(styxFrameworksInterfaces, styxFrameworksFlink)
@@ -173,11 +180,11 @@ lazy val styxUseCasesTwitterSentiment = (project in file("styx-usecases-twitter-
     name := "styx-usecases-twitter-sentiment"
   )
 
-lazy val styxAppPipeline = (project in file("styx-app-pipeline"))
+lazy val styxAppFlinkPipeline = (project in file("styx-app-flink-pipeline"))
   .dependsOn(styxUseCasesShopping, styxUseCasesClickStream, styxUseCasesTwitterSentiment, styxFrameworksFlink, styxFrameworksKafka)
   .settings(
     commonSettings,
-    name := "styx-app-pipeline")
+    name := "styx-app-flink-pipeline")
 
 lazy val styxAppDemo = (project in file("styx-app-demo"))
   .dependsOn(styxUseCasesShopping, styxUseCasesClickStream, styxUseCasesTwitterSentiment, styxFrameworksFlink, styxFrameworksKafka)
@@ -188,13 +195,14 @@ lazy val styxAppDemo = (project in file("styx-app-demo"))
 lazy val root = (project in file("."))
   .aggregate(
     styxAppDemo,
-    styxAppPipeline,
+    styxAppFlinkPipeline,
     styxUseCasesInterfaces,
     styxUseCasesShopping,
     styxUseCasesTwitterSentiment,
     styxUseCasesClickStream,
     styxFrameworksCassandra,
     styxFrameworksFlink,
+    styxFrameworksSpark,
     styxFrameworksKafka,
     styxFrameworksInterfaces,
     styxCommon,
