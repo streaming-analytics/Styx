@@ -63,7 +63,8 @@ lazy val cassandraDependencies = Seq(
 )
 
 lazy val igniteDependencies = Seq(
-  "org.apache.ignite" % "ignite-core" % igniteV
+  "org.apache.ignite" % "ignite-core" % igniteV,
+  "org.apache.ignite" % "ignite-indexing" % igniteV
 )
 
 lazy val flinkDependencies = Seq(
