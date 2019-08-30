@@ -19,6 +19,7 @@ val sparkV = "2.4.3"
 val embeddedKafkaV = "1.0.0"
 val codehaleMetricsV = "3.0.2"
 val jpmmlV = "1.4.11"
+val igniteV = "2.7.5"
 
 lazy val commonSettings = Seq(
   organization := "github.com/streaming-analytics",
@@ -59,6 +60,10 @@ lazy val cassandraDependencies = Seq(
   "io.reactivex" % "rxjava" % "1.1.6" exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
   "org.cassandraunit" % "cassandra-unit" % cassandraUnitV % "test" exclude("org.apache.cassandra", "cassandra-all"),
   "com.codahale.metrics" % "metrics-core" % codehaleMetricsV % "test"
+)
+
+lazy val igniteDependencies = Seq(
+  "org.apache.ignite" % "ignite-core" % igniteV
 )
 
 lazy val flinkDependencies = Seq(
@@ -122,11 +127,18 @@ lazy val styxUseCasesInterfaces = (project in file("styx-usecases-interfaces"))
     name := "styx-usecases-interfaces"
   )
 
+
 lazy val styxFrameworksCassandra = (project in file("styx-frameworks-cassandra"))
   .dependsOn(styxFrameworksInterfaces)
   .settings(
     name := "styx-frameworks-cassandra",
     libraryDependencies ++= commonDependencies ++ cassandraDependencies)
+
+lazy val styxFrameworksIgnite = (project in file("styx-frameworks-ignite"))
+  .dependsOn(styxFrameworksInterfaces)
+  .settings(
+    name := "styx-frameworks-ignite",
+    libraryDependencies ++= commonDependencies ++ igniteDependencies)
 
 lazy val styxFrameworksFlink = (project in file("styx-frameworks-flink"))
   .dependsOn(styxFrameworksInterfaces)
@@ -187,7 +199,7 @@ lazy val styxAppFlinkPipeline = (project in file("styx-app-flink-pipeline"))
     name := "styx-app-flink-pipeline")
 
 lazy val styxAppSparkPipeline = (project in file("styx-app-spark-pipeline"))
-  .dependsOn(styxUseCasesShopping, styxUseCasesClickStream, styxUseCasesTwitterSentiment, styxFrameworksSpark, styxFrameworksKafka)
+  .dependsOn(styxUseCasesShopping, styxUseCasesClickStream, styxUseCasesTwitterSentiment, styxFrameworksSpark, styxFrameworksKafka, styxFrameworksIgnite)
   .settings(
     commonSettings,
     name := "styx-app-spark-pipeline")
@@ -208,6 +220,7 @@ lazy val root = (project in file("."))
     styxUseCasesTwitterSentiment,
     styxUseCasesClickStream,
     styxFrameworksCassandra,
+    styxFrameworksIgnite,
     styxFrameworksFlink,
     styxFrameworksSpark,
     styxFrameworksKafka,
