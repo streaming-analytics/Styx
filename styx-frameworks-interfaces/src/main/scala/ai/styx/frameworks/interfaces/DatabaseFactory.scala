@@ -1,5 +1,6 @@
 package ai.styx.frameworks.interfaces
 
-object DatabaseFactory {
-  // TODO
+trait DatabaseFactory {
+  def createFetcher: DatabaseFetcher
+  def createWriter: DatabaseWriter
 }
