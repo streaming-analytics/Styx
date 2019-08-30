@@ -14,7 +14,7 @@ class TweetSpec extends BaseSpec {
     val json = "{\"created_at\":\"Fri Jul 19 14:12:04 -0700 2019\",\"messageText\":\"This is another test tweet\"}"
     val tweet = Tweet.fromJson(json)
     tweet.isDefined shouldBe true
-    tweet.get.created.get.hourOfDay().get() shouldBe 14
+    tweet.get.created.get.dayOfMonth().get() shouldBe 19
     tweet.get.messageText shouldBe "This is another test tweet"
   }
 

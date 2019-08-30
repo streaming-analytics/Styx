@@ -24,7 +24,7 @@ lazy val commonSettings = Seq(
   organization := "github.com/streaming-analytics",
   version := "0.1",
   scalaVersion := "2.12.7",
-  sbtVersion := "1.1.0",
+  sbtVersion := "1.2.8",
   crossPaths := false,
   scalacOptions := Seq(
     "-encoding", "utf8",

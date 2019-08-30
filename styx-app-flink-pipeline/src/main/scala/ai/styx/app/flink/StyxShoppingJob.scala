@@ -27,6 +27,9 @@ object StyxShoppingJob extends App with Logging {
 
     val consumer = KafkaFactory.createMessageBusConsumer(config).asInstanceOf[KafkaStringConsumer]
 
+    implicit val typeInfo1: TypeInformation[String] = TypeInformation.of(classOf[String])
+    implicit val typeInfo2: TypeInformation[BaseTransactionEvent] = TypeInformation.of(classOf[BaseTransactionEvent])
+
     val input = env.addSource(consumer)
 
     val cep = new CepFunction
@@ -43,5 +46,4 @@ object StyxShoppingJob extends App with Logging {
     businessEvents.addSink(b => LOG.info(b.event))
 
     env.execute("Test 1")
-
 }
