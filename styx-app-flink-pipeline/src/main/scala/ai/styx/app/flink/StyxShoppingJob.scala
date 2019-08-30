@@ -15,6 +15,9 @@ object StyxShoppingJob extends App with Logging {
 
     implicit val info = TypeInformation.of(BasePatternEvent.getClass)
 
+    implicit val typeInfo1: TypeInformation[String] = TypeInformation.of(classOf[String])
+    implicit val typeInfo2: TypeInformation[BaseTransactionEvent] = TypeInformation.of(classOf[BaseTransactionEvent])
+
     implicit val config: Configuration = Configuration.load()
 
     val env = StreamExecutionEnvironment.getExecutionEnvironment
