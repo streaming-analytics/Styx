@@ -15,7 +15,7 @@ class Writer(url: String) extends DatabaseWriter {
   override def deleteTable(tableName: String): Unit = ???
 
   override def createTable(tableName: String, indexColumns: Option[List[Column]], columns: Option[List[Column]]): Unit = {
-    val sql = IgniteConnector.conn.createStatement()
+    val sql = conn.createStatement()
 
     var allColumns = List[Column]()
 

@@ -2,14 +2,15 @@ package ai.styx.frameworks.ignite
 
 import ai.styx.common.BaseSpec
 
-class IgniteConnectorSpec extends BaseSpec {
+class IgniteConnectorSpec extends BaseSpec with EmbeddedIgnite {
 
-  "Ignite Connector" should "connect to a local database and create a table" in {
-    IgniteConnector.createDatabaseTables()
+  "Ignite Connector" should "start and connect to a local database" in {
+    // IgniteConnector.createDatabaseTables()
+    LOG.info(ignite.configuration().getIgniteHome)
   }
 
   it should "write and fetch some data" in {
-    IgniteConnector.insertData()
-    IgniteConnector.getData()
+    //IgniteConnector.insertData()
+    //IgniteConnector.getData()
   }
 }
