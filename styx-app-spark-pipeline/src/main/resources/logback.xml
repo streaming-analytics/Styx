@@ -10,4 +10,15 @@
     <root level="INFO">
         <appender-ref ref="stdout"/>
     </root>
+
+    <logger name="org.apache.spark" additivity="false">
+        <level value="WARN" />
+        <appender-ref ref="stdout" />
+    </logger>
+
+    <logger name="org.apache.kafka" additivity="false">
+        <level value="WARN" />
+        <appender-ref ref="stdout" />
+    </logger>
+
 </configuration>

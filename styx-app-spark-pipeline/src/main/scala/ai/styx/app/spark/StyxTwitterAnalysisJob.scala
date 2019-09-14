@@ -1,17 +1,23 @@
 package ai.styx.app.spark
 
 import ai.styx.common.Logging
+import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 
 object StyxTwitterAnalysisJob extends App with Logging {
   LOG.info("Spark version " + org.apache.spark.SPARK_VERSION)
 
   // connect to Spark
+  val conf = new SparkConf()
+    .setMaster("local[2]")
+    .setAppName("Styx")
+
   val spark = SparkSession
     .builder
-    .appName("Styx")
-    .config("spark.master", "local")
+      .config(conf)
     .getOrCreate()
+
+  //Logger.getLogger("org").setLevel(Level.ERROR)
 
   // get the data from Kafka: subscribe to topic
   val df = spark
@@ -19,9 +25,18 @@ object StyxTwitterAnalysisJob extends App with Logging {
     .format("kafka")
     .option("kafka.bootstrap.servers", "localhost:9092")
     .option("subscribe", "tweets")
+    .option("startingOffsets", "earliest")
     .load()
 
-  val ds = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
+  // split lines by whitespace and explode the array as rows of `word`
+//  val ds = df.select(explode(split("value".cast("string"), "\\s+")).as("word"))
+//    .groupBy("word")
+//    .count
+//      .writeStream
+//      .format("console")
+//      .start
+
+  val ds = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as("line")
     .writeStream
     .format("console")
     .start()
