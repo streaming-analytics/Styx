@@ -14,8 +14,9 @@ val flinkKafkaConnectorV = "1.8.1"
 val cassandraV = "3.11.1"
 val cassandraDriverV = "3.3.2"
 val cassandraUnitV = "3.3.0.2"
-val kafkaV = "2.1.0"
-val sparkV = "2.4.3"
+val kafkaV = "2.3.0"
+val sparkV = "2.4.4"
+val sparkKafkaV = "0-10"
 val embeddedKafkaV = "1.0.0"
 val codehaleMetricsV = "3.0.2"
 val jpmmlV = "1.4.11"
@@ -87,7 +88,8 @@ lazy val kafkaDependencies = Seq(
   "org.apache.kafka" % "kafka-clients" % kafkaV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
   "net.manub" %% "scalatest-embedded-kafka" % embeddedKafkaV % "test",
   "org.apache.flink" %% "flink-connector-kafka" % flinkKafkaConnectorV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
-  "org.apache.flink" %% ("flink-connector-kafka-" + flinkKafkaV) % flinkV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12")
+  "org.apache.flink" %% ("flink-connector-kafka-" + flinkKafkaV) % flinkV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
+  "org.apache.spark" %% ("spark-sql-kafka-" + sparkKafkaV) % sparkV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12")
 )
 
 lazy val overrideDependencies = Set(
