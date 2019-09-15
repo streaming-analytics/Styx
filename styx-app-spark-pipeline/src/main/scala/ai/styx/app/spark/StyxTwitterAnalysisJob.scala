@@ -1,6 +1,7 @@
 package ai.styx.app.spark
 
 import ai.styx.common.Logging
+import ai.styx.domain.events.Tweet
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 
@@ -16,6 +17,8 @@ object StyxTwitterAnalysisJob extends App with Logging {
     .builder
       .config(conf)
     .getOrCreate()
+
+  import spark.sqlContext.implicits._
 
   //Logger.getLogger("org").setLevel(Level.ERROR)
 
@@ -37,6 +40,11 @@ object StyxTwitterAnalysisJob extends App with Logging {
 //      .start
 
   val ds = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as("line")
+    .map(row => {
+      LOG.info("row: " + row.mkString)
+        Tweet.fromString(row.mkString)
+    }
+      ).filter(_ != null).map(_.messageText)
     .writeStream
     .format("console")
     .start()

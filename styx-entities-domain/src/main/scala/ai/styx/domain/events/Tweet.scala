@@ -37,6 +37,18 @@ object Tweet extends Logging {
 
   def objectMapper = mapper
 
+  def fromString(s: String): Tweet = {
+    try {
+      val tweet = mapper.readValue(s, classOf[Tweet]) // .replaceAll("[$\\[\\]{}]", "")
+      if (tweet == null || tweet.messageText == null || tweet.created_at == null) null else tweet
+    }
+    catch {
+      case t: Throwable =>
+        LOG.error(s"Unable to parse tweet from string $s", t)
+        null
+    }
+  }
+
   def fromJson(json: String): Option[Tweet] = {
     try {
       val tweet = mapper.readValue(json, classOf[Tweet]) // .replaceAll("[$\\[\\]{}]", "")
@@ -45,7 +57,7 @@ object Tweet extends Logging {
     }
     catch {
       case t: Throwable =>
-        LOG.error(s"Unable to parse JSON from tweet $json", t)
+        LOG.error(s"Unable to parse tweet from json $json", t)
         None
     }
   }
