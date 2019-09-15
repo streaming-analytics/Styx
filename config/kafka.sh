@@ -13,3 +13,6 @@ bin/kafka-console-producer.sh --broker-list localhost:9092 --topic clickstream <
 
 # 4. (to test) consume data from Kafka:
 bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic clickstream --from-beginning
+
+# list topics:
+bin/kafka-topics.sh --create --zookeeper localhost:2181 --list

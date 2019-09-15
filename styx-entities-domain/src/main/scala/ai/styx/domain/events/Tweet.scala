@@ -1,31 +1,40 @@
 package ai.styx.domain.events
 
-import java.util.Locale
+import java.sql.Timestamp
+import java.time.ZonedDateTime
+import java.util.{Date, Locale}
 
 import ai.styx.common.Logging
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.{JsonIgnoreProperties, JsonProperty}
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.{JsonFormat, JsonIgnoreProperties, JsonProperty}
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.deser.std.DateDeserializers.TimestampDeserializer
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.{DeserializationContext, DeserializationFeature, JsonDeserializer, ObjectMapper}
 import org.joda.time.DateTime
-import org.joda.time.format.DateTimeFormat
 
 import scala.beans.BeanProperty
+import scala.util.Try
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 case class Tweet (
-                   //@JsonProperty("name") name: String = null,
-                   @BeanProperty @JsonProperty("created_at") created_at: String = null,
-                   @BeanProperty @JsonProperty("text") messageText: String = null
+                   @BeanProperty
+                   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "EE MMM dd HH:mm:ss Z yyyy", locale = "en")
+                   @JsonProperty("created_at")
+                   @JsonDeserialize(using = classOf[TimestampDeserializer])
+                   created_at: Timestamp = null,
+
+                   @BeanProperty
+                   @JsonProperty("text")
+                   text: String = null
                    // no other fields needed for now
 ) {
-  def created: Option[DateTime] =
+  def created: Option[DateTime] = {
     try {
-      // format: Sat Sep 10 22:23:38 +0000 2011
-      Some(DateTime.parse(created_at, DateTimeFormat.forPattern("EE MMM dd HH:mm:ss Z yyyy").withLocale(Locale.ENGLISH)))
+      Some(new DateTime(created_at))
     }
     catch {
-      case _: Throwable => None
+      case t: Throwable => None
     }
-
+  }
   def toJson(): String = Tweet.objectMapper.writeValueAsString(this)
 }
 
@@ -40,7 +49,7 @@ object Tweet extends Logging {
   def fromString(s: String): Tweet = {
     try {
       val tweet = mapper.readValue(s, classOf[Tweet]) // .replaceAll("[$\\[\\]{}]", "")
-      if (tweet == null || tweet.messageText == null || tweet.created_at == null) null else tweet
+      if (tweet == null || tweet.text == null || tweet.created_at == null) null else tweet
     }
     catch {
       case t: Throwable =>
@@ -52,7 +61,7 @@ object Tweet extends Logging {
   def fromJson(json: String): Option[Tweet] = {
     try {
       val tweet = mapper.readValue(json, classOf[Tweet]) // .replaceAll("[$\\[\\]{}]", "")
-      val maybeTweet = if (tweet == null || tweet.messageText == null || tweet.created_at == null) None else Some(tweet)
+      val maybeTweet = if (tweet == null || tweet.text == null || tweet.created_at == null) None else Some(tweet)
       maybeTweet
     }
     catch {

@@ -1,5 +1,6 @@
 package ai.styx.app.demo
 
+import java.sql.Timestamp
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -26,15 +27,16 @@ object KafkaDataGenerator extends App with Logging {
 
   lines.foreach(line => {
     val tweet = Tweet.fromJson(line)
-    if (tweet.isDefined && tweet.get.created.isDefined) tweets.append(tweet.get)
+    if (tweet.isDefined && tweet.get.created_at != null) tweets.append(tweet.get)
   })
 
   LOG.info(s"Loaded ${tweets.length} tweets into memory")
 
   while (true) {
     val i = Random.nextInt(tweets.length - 1)
-    val now = DateTime.now.toString(DateTimeFormat.forPattern("EE MMM dd HH:mm:ss Z yyyy").withLocale(Locale.ENGLISH))
+    //val now = DateTime.now.toString(DateTimeFormat.forPattern("EE MMM dd HH:mm:ss Z yyyy").withLocale(Locale.ENGLISH))
 
+    val now = new Timestamp(System.currentTimeMillis())
     val tweet = tweets(i).copy(created_at = now).toJson()
     producer.send(topic, tweet)
 

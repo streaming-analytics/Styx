@@ -13,12 +13,12 @@ class TweetTimestampAndWatermarkGenerator extends AssignerWithPeriodicWatermarks
   override def extractTimestamp(tweet: Tweet, previousElementTimestamp: Long): Long = {
     try {
       LOG.debug("Extracting timestamp...")
-      if (tweet.created.isEmpty) {
+      if (tweet.created_at == null) {
         LOG.warn("No timestamp for tweet")
         0L
       }
       else {
-        val timestamp = tweet.created.get.getMillis
+        val timestamp = tweet.created_at.getTime
         currentMaxTimestamp = Math.max(timestamp, currentMaxTimestamp)
         LOG.debug("Timestamp: " + timestamp)
         timestamp

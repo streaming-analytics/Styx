@@ -59,7 +59,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
       .map(line => Tweet.fromJson(line)).filter(_.isDefined).map(_.get).name("Parsing JSON string")
       // set event timestamp
       .assignTimestampsAndWatermarks(new TweetTimestampAndWatermarkGenerator).name("Getting event time")
-      .flatMap(_.messageText
+      .flatMap(_.text
         // remove special characters & new lines, and convert to lower case
         .replaceAll("[~!@#$^%&*\\\\(\\\\)_+={}\\\\[\\\\]|;:\\\"'<,>.?`/\\n\\\\\\\\-]", "").toLowerCase()
         // create words

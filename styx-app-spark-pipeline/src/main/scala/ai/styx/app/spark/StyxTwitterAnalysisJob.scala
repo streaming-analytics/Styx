@@ -4,6 +4,7 @@ import ai.styx.common.Logging
 import ai.styx.domain.events.Tweet
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions._
 
 object StyxTwitterAnalysisJob extends App with Logging {
   LOG.info("Spark version " + org.apache.spark.SPARK_VERSION)
@@ -18,6 +19,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
       .config(conf)
     .getOrCreate()
 
+  // import spark.implicits._
   import spark.sqlContext.implicits._
 
   //Logger.getLogger("org").setLevel(Level.ERROR)
@@ -38,19 +40,46 @@ object StyxTwitterAnalysisJob extends App with Logging {
 //      .writeStream
 //      .format("console")
 //      .start
+//
+//  // Group the data by window and word and compute the count of each group
+//  val windowedCounts = words.groupBy(
+//    window($"timestamp", "10 minutes", "5 minutes"),
+//    $"word"
+//  ).count()
+//
+//  val ds = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as("kv")  // get key/value pair from Kafka
+//    .map(kv => kv.getString(1))   // get string value
+//    .map(json => {
+//      LOG.info("json: " + json)
+//        Tweet.fromString(json)}   // convert to domain class Tweet
+//      )
+//    .filter(_ != null).map(_.text)
+//    .writeStream
+//    .format("console")
+//    .start()
 
-  val ds = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as("line")
-    .map(row => {
-      LOG.info("row: " + row.mkString)
-        Tweet.fromString(row.mkString)
-    }
-      ).filter(_ != null).map(_.messageText)
-    .writeStream
-    .format("console")
-    .start()
+  val tweets = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as("kv")  // get key/value pair from Kafka
+    .map(kv => kv.getString(1))   // get string value
+    .map(json => {
+      // LOG.info("json: " + json)
+      Tweet.fromString(json)}   // convert to domain class Tweet
+    )
+    .filter(_ != null)
+    //.map(tweet => tweet.text.split(" "))
+    // TODO: get words / hashtags for trends
 
-  df.printSchema()
-  ds.awaitTermination()
+  val windowedTweets = tweets
+      .withWatermark("created_at", "1 second")
+      .groupBy(
+        window($"created_at", "1 second"), $"text")
+      .count()
+
+  val output = windowedTweets.writeStream.format("console").start()
+
+  //df.printSchema()
+  //ds.awaitTermination()
+
+  output.awaitTermination()
 
   ///// part 1a CEP: count the words per period /////
 
