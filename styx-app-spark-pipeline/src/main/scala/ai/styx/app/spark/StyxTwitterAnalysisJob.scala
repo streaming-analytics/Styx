@@ -1,13 +1,16 @@
 package ai.styx.app.spark
 
 import ai.styx.common.Logging
-import ai.styx.domain.events.Tweet
+import ai.styx.domain.events.{Tweet, TweetWord}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 
 object StyxTwitterAnalysisJob extends App with Logging {
   LOG.info("Spark version " + org.apache.spark.SPARK_VERSION)
+
+  val minimumWordLength = 5
+  val wordsToIgnore = Array("would", "could", "should", "sometimes", "maybe", "perhaps", "nothing", "please", "today", "twitter", "everyone", "people", "think", "where", "about", "still", "youre")
 
   // connect to Spark
   val conf = new SparkConf()
@@ -16,10 +19,11 @@ object StyxTwitterAnalysisJob extends App with Logging {
 
   val spark = SparkSession
     .builder
-      .config(conf)
+    .config(conf)
     .getOrCreate()
 
   // import spark.implicits._
+
   import spark.sqlContext.implicits._
 
   //Logger.getLogger("org").setLevel(Level.ERROR)
@@ -34,45 +38,54 @@ object StyxTwitterAnalysisJob extends App with Logging {
     .load()
 
   // split lines by whitespace and explode the array as rows of `word`
-//  val ds = df.select(explode(split("value".cast("string"), "\\s+")).as("word"))
-//    .groupBy("word")
-//    .count
-//      .writeStream
-//      .format("console")
-//      .start
-//
-//  // Group the data by window and word and compute the count of each group
-//  val windowedCounts = words.groupBy(
-//    window($"timestamp", "10 minutes", "5 minutes"),
-//    $"word"
-//  ).count()
-//
-//  val ds = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as("kv")  // get key/value pair from Kafka
-//    .map(kv => kv.getString(1))   // get string value
-//    .map(json => {
-//      LOG.info("json: " + json)
-//        Tweet.fromString(json)}   // convert to domain class Tweet
-//      )
-//    .filter(_ != null).map(_.text)
-//    .writeStream
-//    .format("console")
-//    .start()
+  //  val ds = df.select(explode(split("value".cast("string"), "\\s+")).as("word"))
+  //    .groupBy("word")
+  //    .count
+  //      .writeStream
+  //      .format("console")
+  //      .start
+  //
+  //  // Group the data by window and word and compute the count of each group
+  //  val windowedCounts = words.groupBy(
+  //    window($"timestamp", "10 minutes", "5 minutes"),
+  //    $"word"
+  //  ).count()
+  //
+  //  val ds = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as("kv")  // get key/value pair from Kafka
+  //    .map(kv => kv.getString(1))   // get string value
+  //    .map(json => {
+  //      LOG.info("json: " + json)
+  //        Tweet.fromString(json)}   // convert to domain class Tweet
+  //      )
+  //    .filter(_ != null).map(_.text)
+  //    .writeStream
+  //    .format("console")
+  //    .start()
 
-  val tweets = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as("kv")  // get key/value pair from Kafka
-    .map(kv => kv.getString(1))   // get string value
-    .map(json => {
-      // LOG.info("json: " + json)
-      Tweet.fromString(json)}   // convert to domain class Tweet
-    )
+  val tweets = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as("kv") // get key/value pair from Kafka
+    .map(kv => kv.getString(1)) // get string value
+    .map(json => {Tweet.fromString(json)}) // convert to domain class Tweet
     .filter(_ != null)
-    //.map(tweet => tweet.text.split(" "))
-    // TODO: get words / hashtags for trends
+
+    // create multiple TweetWord objects from 1 Tweet object. Keep the Timestamp, but split the text in words
+    .flatMap(tweet => {
+      val words = tweet.text
+        // remove special characters & new lines
+        .replaceAll("[~!@#$^%&*\\\\(\\\\)_+={}\\\\[\\\\]|;:\\\"'<,>.?`/\\n\\\\\\\\-]", "")
+        // convert to lower case
+        .toLowerCase()
+        // create words
+        .split("[ \\t]+")
+
+      words.map(word => TweetWord(tweet.created_at, word))
+    })
+    .filter(tw => !wordsToIgnore.contains(tw.word) && tw.word.length >= minimumWordLength)
 
   val windowedTweets = tweets
-      .withWatermark("created_at", "1 second")
-      .groupBy(
-        window($"created_at", "1 second"), $"text")
-      .count()
+    .withWatermark("created_at", "1 second")
+    .groupBy(
+      window($"created_at", "1 second"), $"word")
+    .count()
 
   val output = windowedTweets.writeStream.format("console").start()
 

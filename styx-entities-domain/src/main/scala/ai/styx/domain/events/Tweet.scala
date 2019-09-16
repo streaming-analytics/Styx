@@ -12,7 +12,6 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.{Deserial
 import org.joda.time.DateTime
 
 import scala.beans.BeanProperty
-import scala.util.Try
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 case class Tweet (
@@ -71,3 +70,5 @@ object Tweet extends Logging {
     }
   }
 }
+
+case class TweetWord(created_at: Timestamp, word: String)
