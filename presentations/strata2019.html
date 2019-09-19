@@ -45,7 +45,7 @@
             <section>
                 <h2>Fast data with the </h2>
                 <h1>KISSS stack</h1>
-                <img src="img/oscon.jpg" style="height: 150px;" />
+                <img src="img/strata.png" style="height: 150px;" />
                 <p>
                     <small>Bas Geerdink | September 25, 2019 | Strata New York </small>
                 </p>
@@ -193,7 +193,7 @@
                 <h2>The KISSS stack</h2>
                 <ul>
                     <li>Data stream storage: <b>Kafka</b></li>
-                    <li>Persisting rules, models, and config: <b>Ignite</b></li>
+                    <li>Persisting cache, rules, models, and config: <b>Ignite</b></li>
                     <li>Stream processing: <b>Spark Structured Streaming</b></li>
                     <!--li>Model scoring: <b>PMML</b> and <b>Openscoring.io</b></li-->
                     <li>Model scoring: <b>Spark MlLib</b></li>
@@ -226,31 +226,6 @@
                             </ul>
                         </li>
                     </ul>
-
-                </section>
-
-                <section>
-                    <h2>Hello speed!</h2>
-                    <!-- Simplified code: serializing data and making a DataStream of 'raw' Kafka events -->
-                    <pre><code data-trim>
-// TODO: update!
-                        def getData(env: StreamExecutionEnvironment): DataStream[MyEvent] = {
-
-    // create schema for deserialization
-    val readSchema = KafkaSchemaFactory.createKeyedDeserializer
-            (readTopicDef, rawEventFromPayload)
-
-    // consume events
-    val rawEventSource = new FlinkKafkaConsumer010[BaseKafkaEvent]
-            (toStringList(readTopicDef), readSchema, props)
-
-    // connect to source and handle events
-    env.addSource(rawEventSource)
-      .filter(_.isSuccess)   // deserialize must succeed
-      .flatMap(event => doSomething(event))
-      .addSink(writeToOutputStream)
-}
-                </code></pre>
                 </section>
 
                 <section>
@@ -258,11 +233,36 @@
                     <ul>
                         <li>To get high throughput, we have to process the events in parallel</li>
                         <li>Parallelism can be configured on cluster level and on job level</li>
-                        <li class="fragment" data-fragment-index="1">On cluster level: set the number of task slots (servers)
-                            per job</li>
-                        <li class="fragment" data-fragment-index="1">On job level: distribute the data by grouping on a certain
-                            data field</li>
                     </ul>
+
+                    <pre><code data-trim>
+  // connect to Spark
+  val conf = new SparkConf()
+    .setMaster("local[2]")
+    .setAppName("Styx")
+
+  val spark = SparkSession
+    .builder
+    .config(conf)
+    .getOrCreate()
+
+  import spark.sqlContext.implicits._
+                    </code></pre>
+                </section>
+
+                <section>
+                    <h2>Hello speed!</h2>
+                    <!-- Simplified code: serializing data and making a DataStream of 'raw' Kafka events -->
+                    <pre><code data-trim>
+  // get the data from Kafka: subscribe to topic
+  val df = spark
+    .readStream
+    .format("kafka")
+    .option("kafka.bootstrap.servers", "localhost:9092")
+    .option("subscribe", "tweets")
+    .option("startingOffsets", "earliest")
+    .load()
+                </code></pre>
                 </section>
 
                 <section>
@@ -274,9 +274,7 @@
                             <ul class="fragment" data-fragment-index="1">
                                 <li>Sliding window</li> <!-- e.g. looking back at the last hour, continuous updating average of system activity -->
                                 <li>Tumbling window</li> <!-- e.g. processing data per day to get a financial report -->
-                                <li>Session window</li> <!-- based on event data, e.g. users logged in and out -->
-                                <!-- <li>Global window</li> -->
-                                <!-- per key, e.g. check _all_ user activity -->
+                                <li><i>Session window</i></li> <!-- based on event data, e.g. users logged in and out. Not in Spark! -->
                             </ul>
                         </li>
                         <aside class="notes">
@@ -304,20 +302,12 @@
                 <section>
                     <h2>Windows</h2>
                     <pre><code data-trim>
-// in: (word, count)
-// out: (timestamp of end of window, word, count), key (word), window
-class WordCountWindowFunction extends
-        WindowFunction[(String, Int), WordCount, String, TimeWindow] {
-  def apply(key: String,
-            window: TimeWindow,
-            input: Iterable[(String, Int)],
-            out: Collector[WordCount]): Unit = {
-    val count = input.count(_ => true)
-    out.collect(WordCount(window.getEnd, key, count))
-  }
-}
-                    </code>
-                    </pre>
+  val windowedTweets = tweets
+    .groupBy(
+      // sliding window of 60 seconds, evaluated every 30 seconds
+      window($"created_at", "60 seconds", "30 seconds"), $"word")
+    .count()
+                    </code></pre>
                 </section>
 
                 <section>
@@ -345,33 +335,6 @@ class WordCountWindowFunction extends
                 </section>
 
                 <section>
-                    <h2>Event time</h2>
-                    <pre><code data-trim>
-env.addSource(rawEventSource)
-      .filter(_.isSuccess)   // deserialize must succeed
-      .assignTimestampsAndWatermarks(
-                        new TimedEventWatermarkExtractor)
-      .flatMap(event => doSomething(event))
-      .addSink(writeToOutputStream)
-                    </code></pre>
-
-                    <pre class="fragment" data-fragment-index="1"><code data-trim>
-                    class TimedEventWatermarkExtractor
-                       extends AssignerWithPeriodicWatermarks[TimedEvent]() {
-
-                        // specify the event time
-                        override def extractTimestamp(element: TimedEvent,
-                                        previousElementTimestamp: Long): Long = {
-                            // set event time to 'eventTime' field in events
-                            element.eventTime.getMillis
-                        }
-
-                        override def getCurrentWatermark: Watermark = ???
-                    }
-                    </code></pre>
-                </section>
-
-                <section>
                     <h2>Watermarks</h2>
                     <ul>
                         <li><i>Watermarks</i> are timestamps that trigger the computation of the window</li>
@@ -391,28 +354,18 @@ env.addSource(rawEventSource)
                 <section>
                     <h2>Event Time and Watermarks</h2>
                     <pre><code data-trim>
-                    class TimedEventWatermarkExtractor
-                       extends AssignerWithPeriodicWatermarks[TimedEvent]() {
-
-                        // specify the event time
-                        override def extractTimestamp(element: TimedEvent,
-                                        previousElementTimestamp: Long): Long = {
-                            // set event time to 'eventTime' field in events
-                            element.eventTime.getMillis
-                        }
-
-                        // this method is called to emit a watermark every time the
-                        // ExecutionConfig.setAutoWatermarkInterval(...) interval occurs
-                        override def getCurrentWatermark: Watermark = {
-                            // one second delay for processing of window
-                            new Watermark(System.currentTimeMillis() - 1000)
-                        }
-                    }
+  val windowedTweets = tweets
+    .withWatermark("created_at", "1 second")
+    .groupBy(
+      // sliding window of 60 seconds, evaluated every 30 seconds
+      window($"created_at", "60 seconds", "30 seconds"), $"word")
+    .count()
                     </code></pre>
                     <aside class="notes">
                         Example: tumbling window of one hour, watermark is 1 minute. af 14:02 an event comes in with an event time of 13:59
                     </aside>
                 </section>
+            </section>
 
             <section>
                 <section>
@@ -548,7 +501,7 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
         </div>
 
         <div id="footer">
-            <img src="img/oscon_footer2.png" style="width:100%; max-width:100%;">
+            <img src="img/strata_footer.png" style="width:100%; max-width:100%;">
         </div>
 
     </div> <!-- reveal -->

@@ -1,10 +1,14 @@
 package ai.styx.app.spark
 
+import java.sql.Timestamp
+import java.util.{Calendar, Date}
+
 import ai.styx.common.Logging
 import ai.styx.domain.events.{Tweet, TweetWord}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
+import org.joda.time.DateTime
 
 object StyxTwitterAnalysisJob extends App with Logging {
   LOG.info("Spark version " + org.apache.spark.SPARK_VERSION)
@@ -22,11 +26,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
     .config(conf)
     .getOrCreate()
 
-  // import spark.implicits._
-
   import spark.sqlContext.implicits._
-
-  //Logger.getLogger("org").setLevel(Level.ERROR)
 
   // get the data from Kafka: subscribe to topic
   val df = spark
@@ -37,30 +37,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
     .option("startingOffsets", "earliest")
     .load()
 
-  // split lines by whitespace and explode the array as rows of `word`
-  //  val ds = df.select(explode(split("value".cast("string"), "\\s+")).as("word"))
-  //    .groupBy("word")
-  //    .count
-  //      .writeStream
-  //      .format("console")
-  //      .start
-  //
-  //  // Group the data by window and word and compute the count of each group
-  //  val windowedCounts = words.groupBy(
-  //    window($"timestamp", "10 minutes", "5 minutes"),
-  //    $"word"
-  //  ).count()
-  //
-  //  val ds = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as("kv")  // get key/value pair from Kafka
-  //    .map(kv => kv.getString(1))   // get string value
-  //    .map(json => {
-  //      LOG.info("json: " + json)
-  //        Tweet.fromString(json)}   // convert to domain class Tweet
-  //      )
-  //    .filter(_ != null).map(_.text)
-  //    .writeStream
-  //    .format("console")
-  //    .start()
+  ///// part 1a CEP: count the words per period /////
 
   val tweets = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as("kv") // get key/value pair from Kafka
     .map(kv => kv.getString(1)) // get string value
@@ -84,19 +61,17 @@ object StyxTwitterAnalysisJob extends App with Logging {
   val windowedTweets = tweets
     .withWatermark("created_at", "1 second")
     .groupBy(
-      window($"created_at", "1 second"), $"word")
+      // sliding window of 60 seconds, evaluated every 30 seconds
+      window($"created_at", "60 seconds", "30 seconds"), $"word")
     .count()
+
+  // windowedTweets is a sql.DataFrame
 
   val output = windowedTweets.writeStream.format("console").start()
 
-  //df.printSchema()
-  //ds.awaitTermination()
-
   output.awaitTermination()
 
-  ///// part 1a CEP: count the words per period /////
-
-  ///// part 1b CEP: look at 2 periods (e.g. days) and calculate slope, find top 5 /////
+  ///// part 1b CEP: look at 2 periods (e.g. hours) and calculate slope, find top 5 /////
 
   ///// #2: ML, get notification /////
 
@@ -112,4 +87,9 @@ object StyxTwitterAnalysisJob extends App with Logging {
   //    .option("topic", "topic1")
   //    .start()
 
+  def round(ts: Timestamp): Timestamp = {
+    val date = new DateTime(ts)
+
+    new Timestamp(date.year().get, date.monthOfYear().get, date.dayOfMonth().get, date.hourOfDay().get, date.minuteOfHour().get, 0, 0)
+  }
 }

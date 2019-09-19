@@ -40,8 +40,8 @@ object KafkaDataGenerator extends App with Logging {
     val tweet = tweets(i).copy(created_at = now).toJson()
     producer.send(topic, tweet)
 
-    Thread.sleep(50)  // 20 per second
-    LOG.info("Send tweet: " + tweet)
+    Thread.sleep(5)  // 200 per second
+    //LOG.info("Send tweet: " + tweet)
   }
 
   producer.close(1000L, TimeUnit.MILLISECONDS)

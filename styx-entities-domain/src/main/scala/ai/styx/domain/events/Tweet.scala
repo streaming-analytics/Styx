@@ -1,14 +1,12 @@
 package ai.styx.domain.events
 
 import java.sql.Timestamp
-import java.time.ZonedDateTime
-import java.util.{Date, Locale}
 
 import ai.styx.common.Logging
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.{JsonFormat, JsonIgnoreProperties, JsonProperty}
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.deser.std.DateDeserializers.TimestampDeserializer
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.{DeserializationContext, DeserializationFeature, JsonDeserializer, ObjectMapper}
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.{DeserializationFeature, ObjectMapper}
 import org.joda.time.DateTime
 
 import scala.beans.BeanProperty
