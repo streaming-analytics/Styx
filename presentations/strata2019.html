@@ -186,7 +186,7 @@
 
             <section>
                 <h2>Architecture</h2>
-                <img src="img/architecture_no_tech.png" class="stretch">
+                <img src="img/architecture_spark_no_tech.png" class="stretch">
             </section>
 
             <section>
@@ -195,8 +195,8 @@
                     <li>Data stream storage: <b>Kafka</b></li>
                     <li>Persisting cache, rules, models, and config: <b>Ignite</b></li>
                     <li>Stream processing: <b>Spark Structured Streaming</b></li>
-                    <!--li>Model scoring: <b>PMML</b> and <b>Openscoring.io</b></li-->
-                    <li>Model scoring: <b>Spark MlLib</b></li>
+                    <li>Model scoring: <b>PMML</b> and <b>Openscoring.io</b></li>
+<!--                    <li>Model scoring: <b>Spark MlLib</b></li>-->
                 </ul>
                 <aside class="notes">
                     The KISSS stack!<br>
@@ -207,21 +207,26 @@
             </section>
 
             <section>
+                <h2>KISSS Architecture</h2>
+                <img src="img/architecture_spark.png" class="stretch">
+            </section>
+
+            <section>
                 <section>
                     <h2>Deep dive part 1</h2>
-                    <img src="img/part1.png" class="stretch">
+                    <img src="img/part1_spark.png" class="stretch">
                 </section>
 
                 <section>
                     <h2>Spark-Kafka integration</h2>
                     <ul>
-                        <li>A Fast Data application is a running <i>job</i> that processes events in a data store (e.g. Kafka)</li>
-                        <li>Jobs can be deployed as ever-running pieces of software in a cluster (e.g. Spark)</li>
+                        <li>A Fast Data application is a running <i>job</i> that processes events in a data store (Kafka)</li>
+                        <li>Jobs can be deployed as ever-running pieces of software in a big data cluster (Spark)</li>
                         <li class="fragment" data-fragment-index="1">The basic pattern of a job is:
                             <ul class="fragment" data-fragment-index="1">
                                 <li>Connect to the stream and consume events</li>
                                 <li>Group and gather events (windowing)</li>
-                                <li>Perform analysis on each window</li>
+                                <li>Perform analysis (aggregation) on each window</li>
                                 <li>Write the result to another stream (sink)</li>
                             </ul>
                         </li>
@@ -232,8 +237,10 @@
                     <h2>Parallelism</h2>
                     <ul>
                         <li>To get high throughput, we have to process the events in parallel</li>
-                        <li>Parallelism can be configured on cluster level and on job level</li>
+                        <li>Parallelism can be configured on cluster level (YARN) and on job level (number of executors)</li>
                     </ul>
+
+                    spark.executor.cores=2, spark.task.cpus=1
 
                     <pre><code data-trim>
   // connect to Spark
@@ -301,13 +308,18 @@
 
                 <section>
                     <h2>Windows</h2>
+                    <p>Example: sliding window of 1 day, evaluated every 15 minutes over the field 'customer_id'.
+                        The event time is stored in the field 'transaction_time'</p>
                     <pre><code data-trim>
-  val windowedTweets = tweets
+  val windowedTransactions = transactionStream
     .groupBy(
-      // sliding window of 60 seconds, evaluated every 30 seconds
-      window($"created_at", "60 seconds", "30 seconds"), $"word")
-    .count()
+      window($"transaction_time", "1 day", "15 minutes"),
+      $"customer_id")
                     </code></pre>
+
+                    <aside class="notes">
+                        !! groupBy, keyBy = divide across nodes?
+                    </aside>
                 </section>
 
                 <section>
@@ -315,9 +327,9 @@
                     <ul>
                         <li>Events occur at certain time <span class="fragment fade-in" data-fragment-index="1">
                                 <b>&rAarr; event time</b></span></li>
-                        <li>... but arrive a little while later <span class="fragment fade-in" data-fragment-index="1">
-                                <b>&rAarr; ingestion time</b></span></li>
-                        <li>... and are processed even later <span class="fragment fade-in" data-fragment-index="1">
+<!--                        <li>... but arrive a little while later <span class="fragment fade-in" data-fragment-index="1">-->
+<!--                                <b>&rAarr; ingestion time</b></span></li>-->
+                        <li>... and are processed later <span class="fragment fade-in" data-fragment-index="1">
                                 <b>&rAarr; processing time</b></span></li>
                     </ul>
                     <img src="img/EventTime.png" class="fragment" data-fragment-index="2" />
@@ -339,10 +351,10 @@
                     <ul>
                         <li><i>Watermarks</i> are timestamps that trigger the computation of the window</li>
                         <li>They are generated at a time that allows a bit of slack for <i>late events</i></li>
-                        <li class="fragment" data-fragment-index="1">By default, any event that reaches the processor later
+                        <li class="fragment" data-fragment-index="1">Any event that reaches the processor later
                             than the watermark, but with an event time that should belong to the former window, is <i>ignored</i></li>
-                        <li class="fragment" data-fragment-index="2">It's possible to allow late events to trigger re-computation
-                            of a window by setting the <i>allowedLateness</i> property</li>
+<!--                        <li class="fragment" data-fragment-index="2">In Flink, it's possible to allow late events to trigger re-computation-->
+<!--                            of a window by setting the <i>allowedLateness</i> property</li>-->
                     </ul>
                     <aside class="notes">
                         How do we know when to calculate a window?<br> Watermarks assert that all earlier events have (probably)
@@ -353,24 +365,34 @@
 
                 <section>
                     <h2>Event Time and Watermarks</h2>
+                    <p>Example: sliding window of 60 seconds, evaluated every 30 seconds. The watermark is set at 1 second, giving all events a second of event time to arrive</p>
                     <pre><code data-trim>
-  val windowedTweets = tweets
+  val windowedTweets = tweetStream
     .withWatermark("created_at", "1 second")
     .groupBy(
-      // sliding window of 60 seconds, evaluated every 30 seconds
-      window($"created_at", "60 seconds", "30 seconds"), $"word")
-    .count()
+      window($"created_at", "60 seconds", "30 seconds"),
+      $"word")
                     </code></pre>
-                    <aside class="notes">
-                        Example: tumbling window of one hour, watermark is 1 minute. af 14:02 an event comes in with an event time of 13:59
-                    </aside>
                 </section>
             </section>
 
             <section>
                 <section>
                     <h2>Deep dive part 2</h2>
-                    <img src="img/part2.png" class="stretch" />
+                    <img src="img/part2_spark.png" class="stretch" />
+                </section>
+
+                <section>
+                    <h2>Model scoring</h2>
+                    <ul>
+                        <li>To determine the follow-up action of a aggregated business event (e.g. pattern), we have to enrich the event with customer data</li>
+                        <li>The resulting data object contains the characteristics (features) as input for a model</li>
+                        <li class="fragment" data-fragment-index="1">To get the features and score the model, efficiency plays a role again:</li>
+                        <ul class="fragment" data-fragment-index="1">
+                            <li>In-memory data cache > API call</li>
+                            <li>In-memory model cache > model on disk</li>
+                        </ul>
+                    </ul>
                 </section>
 
                 <section>
@@ -380,7 +402,6 @@
                         <li>Data scientists can export their machine learning models to PMML (or PFA) format</li>
                     </ul>
                     <pre><code data-trim>
-                        // TODO: update! (MlLib)
 from sklearn.linear_model import LogisticRegression
 from sklearn2pmml import sklearn2pmml
 
@@ -401,9 +422,9 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
                 <section>
                     <h2>Model scoring</h2>
                     <ul>
-                        <li>By applying a map function over the events we can apply functions that process/transform the
-                            data in the windows</li>
-                        <li>For example:
+                        <li>The models can be loaded into memory to enable split-second performance</li>
+                        <li>By applying <i>map</i> functions over the events we can process/transform the
+                            data in the windows:</li>
                             <ol>
                                 <li>enrich each business event by getting more data</li>
                                 <li>filtering events based on selection criteria (rules)</li>
@@ -440,38 +461,38 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
 
             </section>
 
-            <section>
-                <h2>Alternative stacks</h2>
-                <small>
-                <table>
-                    <thead>
-                    <tr>
-                        <th>Message bus</th>
-                        <th>Streaming technology</th>
-                        <th>Database</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        <td>Kafka</td>
-                        <td>Spark Structured Streaming</td>
-                        <td>Ignite</td>
-                    </tr>
-                    <tr>
-                        <td>Kafka</td>
-                        <td>Flink</td>
-                        <td>Cassandra</td>
-                    </tr>
-                    <tr>
-                        <td>Kinesis Data Streams</td>
-                        <td>Kinesis Data Firehose</td>
-                        <td>DynamoDb</td>
-                    </tr>
+<!--            <section>-->
+<!--                <h2>Alternative stacks</h2>-->
+<!--                <small>-->
+<!--                <table>-->
+<!--                    <thead>-->
+<!--                    <tr>-->
+<!--                        <th>Message bus</th>-->
+<!--                        <th>Streaming technology</th>-->
+<!--                        <th>Database</th>-->
+<!--                    </tr>-->
+<!--                    </thead>-->
+<!--                    <tbody>-->
+<!--                    <tr>-->
+<!--                        <td>Kafka</td>-->
+<!--                        <td>Spark Structured Streaming</td>-->
+<!--                        <td>Ignite</td>-->
+<!--                    </tr>-->
+<!--                    <tr>-->
+<!--                        <td>Kafka</td>-->
+<!--                        <td>Flink</td>-->
+<!--                        <td>Cassandra</td>-->
+<!--                    </tr>-->
+<!--                    <tr>-->
+<!--                        <td>Kinesis Data Streams</td>-->
+<!--                        <td>Kinesis Data Firehose</td>-->
+<!--                        <td>DynamoDb</td>-->
+<!--                    </tr>-->
 
-                    </tbody>
-                </table>
-                </small>
-            </section>
+<!--                    </tbody>-->
+<!--                </table>-->
+<!--                </small>-->
+<!--            </section>-->
 
             <section>
                 <h2>Wrap-up</h2>
@@ -485,6 +506,7 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
 
             <section>
                 <h2>Thanks!</h2>
+                <p>Please rate my session on the website or app :)</p>
                 <p>Read more about streaming analytics at:</p>
                 <ul>
                     <li><a href="https://www.oreilly.com/ideas/the-world-beyond-batch-streaming-101">The world beyond batch:

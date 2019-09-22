@@ -27,6 +27,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
     .getOrCreate()
 
   import spark.sqlContext.implicits._
+  import org.apache.spark.sql.expressions.scalalang.typed
 
   // get the data from Kafka: subscribe to topic
   val df = spark
@@ -39,7 +40,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
 
   ///// part 1a CEP: count the words per period /////
 
-  val tweets = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as("kv") // get key/value pair from Kafka
+  val tweetStream = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as("kv") // get key/value pair from Kafka
     .map(kv => kv.getString(1)) // get string value
     .map(json => {Tweet.fromString(json)}) // convert to domain class Tweet
     .filter(_ != null)
@@ -58,7 +59,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
     })
     .filter(tw => !wordsToIgnore.contains(tw.word) && tw.word.length >= minimumWordLength)
 
-  val windowedTweets = tweets
+  val windowedTweets = tweetStream
     .withWatermark("created_at", "1 second")
     .groupBy(
       // sliding window of 60 seconds, evaluated every 30 seconds
