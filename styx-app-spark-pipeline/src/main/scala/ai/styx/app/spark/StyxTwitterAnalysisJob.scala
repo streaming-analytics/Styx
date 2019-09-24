@@ -1,18 +1,20 @@
 package ai.styx.app.spark
 
 import java.sql.Timestamp
-import java.util.{Calendar, Date}
 
-import ai.styx.common.Logging
+import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.{Tweet, TweetWord}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.joda.time.DateTime
+import ai.styx.frameworks.ignite.{EmbeddedIgnite, IgniteFactory}
+import ai.styx.frameworks.interfaces.DatabaseWriter
 
-object StyxTwitterAnalysisJob extends App with Logging {
+object StyxTwitterAnalysisJob extends App with Logging with EmbeddedIgnite {
   LOG.info("Spark version " + org.apache.spark.SPARK_VERSION)
 
+  val config = Configuration.load()
   val minimumWordLength = 5
   val wordsToIgnore = Array("would", "could", "should", "sometimes", "maybe", "perhaps", "nothing", "please", "today", "twitter", "everyone", "people", "think", "where", "about", "still", "youre")
 
@@ -27,9 +29,8 @@ object StyxTwitterAnalysisJob extends App with Logging {
     .getOrCreate()
 
   import spark.sqlContext.implicits._
-  import org.apache.spark.sql.expressions.scalalang.typed
 
-  // get the data from Kafka: subscribe to topic
+  // connect to Kafka: subscribe to topic
   val df = spark
     .readStream
     .format("kafka")
@@ -37,6 +38,9 @@ object StyxTwitterAnalysisJob extends App with Logging {
     .option("subscribe", "tweets")
     .option("startingOffsets", "earliest")
     .load()
+
+  // connect to Ignite
+  val dbWriter: DatabaseWriter = new IgniteFactory(config.igniteConfig)
 
   ///// part 1a CEP: count the words per period /////
 
@@ -63,16 +67,23 @@ object StyxTwitterAnalysisJob extends App with Logging {
     .withWatermark("created_at", "1 second")
     .groupBy(
       // sliding window of 60 seconds, evaluated every 30 seconds
-      window($"created_at", "60 seconds", "30 seconds"), $"word")
+      window($"created_at", "60 seconds", "30 seconds"),
+      $"word")
     .count()
 
   // windowedTweets is a sql.DataFrame
+
+  // cache the word counts per window
+
+
 
   val output = windowedTweets.writeStream.format("console").start()
 
   output.awaitTermination()
 
   ///// part 1b CEP: look at 2 periods (e.g. hours) and calculate slope, find top 5 /////
+
+  // TODO: use state, mapGroupsWithState
 
   ///// #2: ML, get notification /////
 

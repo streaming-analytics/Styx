@@ -29,6 +29,12 @@ class KafkaConfiguration(config: Configuration) {
   // TODO: consumer and producer
 }
 
+class IgniteConfiguration(config: Configuration) {
+  private lazy val igniteConfig = config.getConfig("ignite")
+
+
+}
+
 class Configuration {
   private val _base: Config = ConfigFactory.load()
 

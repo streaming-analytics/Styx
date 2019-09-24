@@ -76,22 +76,20 @@
             </code></pre>
             </section>
 
-<!--            <section>-->
-<!--                <h2>Agenda</h2>-->
-<!--                <ol>-->
-<!--                    <li>Fast Data use cases</li>-->
-<!--                    <li>Architecture and Technology</li>-->
-<!--                    <li>Deep dive:-->
-<!--                        <ul>-->
-<!--                            <li>Parallel processing</li>-->
-<!--                            <li>Event Time, Windows, and Watermarks</li>-->
-<!--                            <li>Exactly-once Processing</li>-->
-<!--                            <li>Model scoring</li>-->
-<!--                        </ul>-->
-<!--                    </li>-->
-<!--                    <li>Wrap-up</li>-->
-<!--                </ol>-->
-<!--            </section>-->
+            <section>
+                <h2>Agenda</h2>
+                <ol>
+                    <li>Fast Data use cases</li>
+                    <li>Architecture and Technology</li>
+                    <li>Deep dive:
+                        <ul>
+                            <li>Event Time, Windows, and Watermarks</li>
+                            <li>Model scoring</li>
+                        </ul>
+                    </li>
+                    <li>Wrap-up</li>
+                </ol>
+            </section>
 
             <section>
                 <h2>Big Data</h2>
@@ -196,7 +194,6 @@
                     <li>Persisting cache, rules, models, and config: <b>Ignite</b></li>
                     <li>Stream processing: <b>Spark Structured Streaming</b></li>
                     <li>Model scoring: <b>PMML</b> and <b>Openscoring.io</b></li>
-<!--                    <li>Model scoring: <b>Spark MlLib</b></li>-->
                 </ul>
                 <aside class="notes">
                     The KISSS stack!<br>
@@ -240,20 +237,14 @@
                         <li>Parallelism can be configured on cluster level (YARN) and on job level (number of executors)</li>
                     </ul>
 
+                    <pre><code data-trim>
                     spark.executor.cores=2, spark.task.cpus=1
+                    </code></pre>
 
                     <pre><code data-trim>
-  // connect to Spark
   val conf = new SparkConf()
     .setMaster("local[2]")
     .setAppName("Styx")
-
-  val spark = SparkSession
-    .builder
-    .config(conf)
-    .getOrCreate()
-
-  import spark.sqlContext.implicits._
                     </code></pre>
                 </section>
 
@@ -261,6 +252,14 @@
                     <h2>Hello speed!</h2>
                     <!-- Simplified code: serializing data and making a DataStream of 'raw' Kafka events -->
                     <pre><code data-trim>
+  // connect to Spark
+  val spark = SparkSession
+    .builder
+    .config(conf)
+    .getOrCreate()
+
+  import spark.sqlContext.implicits._
+
   // get the data from Kafka: subscribe to topic
   val df = spark
     .readStream
