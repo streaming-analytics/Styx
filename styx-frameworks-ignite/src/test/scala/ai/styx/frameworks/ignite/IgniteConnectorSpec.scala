@@ -6,7 +6,7 @@ class IgniteConnectorSpec extends BaseSpec with EmbeddedIgnite {
 
   "Ignite Connector" should "start and connect to a local database" in {
     // IgniteConnector.createDatabaseTables()
-    LOG.info(ignite.configuration().getIgniteHome)
+    //LOG.info(ignite.configuration().getIgniteHome)
   }
 
   it should "write and fetch some data" in {

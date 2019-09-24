@@ -3,6 +3,7 @@ package ai.styx.domain.events
 import java.sql.Timestamp
 
 import ai.styx.common.Logging
+import ai.styx.domain.DomainEntity
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.{JsonFormat, JsonIgnoreProperties, JsonProperty}
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.deser.std.DateDeserializers.TimestampDeserializer
@@ -70,3 +71,5 @@ object Tweet extends Logging {
 }
 
 case class TweetWord(created_at: Timestamp, word: String)
+
+case class TweetWindowTrend(id: String, windowStart: Timestamp, windowEnd: Timestamp, word: String, count: Long) extends DomainEntity(id)

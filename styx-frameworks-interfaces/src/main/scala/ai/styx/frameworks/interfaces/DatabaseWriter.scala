@@ -1,5 +1,8 @@
 package ai.styx.frameworks.interfaces
 
+import java.sql.Timestamp
+import java.time.format.DateTimeFormatter
+
 import ai.styx.common.Logging
 import ai.styx.domain.DomainEntity
 import ai.styx.domain.utils.{Column, ColumnType}
@@ -43,7 +46,8 @@ trait DatabaseWriter extends Logging {
         case _: java.lang.Integer => Column(field._1, ColumnType.INT) -> field._2
         case _: java.lang.Double => Column(field._1, ColumnType.DOUBLE) -> field._2
         case _: java.lang.Boolean => Column(field._1, ColumnType.BOOLEAN) -> field._2
-        case dt: DateTime => Column(field._1, ColumnType.TIMESTAMP) -> dt.toString("MM/dd/yyyy_HH:mm:ss:SSS")
+        case ts: Timestamp => Column(field._1, ColumnType.TIMESTAMP) -> DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").format(ts.toLocalDateTime)
+        case dt: DateTime => Column(field._1, ColumnType.TIMESTAMP) -> dt.toString("yyyy-MM-dd HH:mm:ss.SSS")  // MM/dd/yyyy_HH:mm:ss:SSS  ??
         case e: Enumeration => Column(field._1, ColumnType.TEXT) -> e.toString()
         case _ => Column(field._1, ColumnType.TEXT) -> field._2.toString // other types: just translate to string
       }

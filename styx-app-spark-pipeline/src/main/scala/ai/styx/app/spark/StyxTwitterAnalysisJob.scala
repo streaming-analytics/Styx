@@ -3,7 +3,7 @@ package ai.styx.app.spark
 import java.sql.Timestamp
 
 import ai.styx.common.{Configuration, Logging}
-import ai.styx.domain.events.{Tweet, TweetWord}
+import ai.styx.domain.events.{Tweet, TweetWindowTrend, TweetWord}
 import ai.styx.domain.utils.{Column, ColumnType}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
@@ -12,12 +12,16 @@ import org.joda.time.DateTime
 import ai.styx.frameworks.ignite.{EmbeddedIgnite, IgniteFactory}
 import ai.styx.frameworks.interfaces.DatabaseWriter
 
-object StyxTwitterAnalysisJob extends App with Logging with EmbeddedIgnite {
+object StyxTwitterAnalysisJob extends App with Logging {
   LOG.info("Spark version " + org.apache.spark.SPARK_VERSION)
 
   val config = Configuration.load()
   val minimumWordLength = 5
   val wordsToIgnore = Array("would", "could", "should", "sometimes", "maybe", "perhaps", "nothing", "please", "today", "twitter", "everyone", "people", "think", "where", "about", "still", "youre")
+  val columns = List(Column("id", ColumnType.TEXT), Column("windowStart", ColumnType.TIMESTAMP), Column("windowEnd", ColumnType.TIMESTAMP), Column("word", ColumnType.TEXT), Column("count", ColumnType.INT))
+
+  var id = 1
+  var windowCount = 0
 
   // connect to Spark
   val conf = new SparkConf()
@@ -48,7 +52,9 @@ object StyxTwitterAnalysisJob extends App with Logging with EmbeddedIgnite {
 
   val tweetStream = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as("kv") // get key/value pair from Kafka
     .map(kv => kv.getString(1)) // get string value
-    .map(json => {Tweet.fromString(json)}) // convert to domain class Tweet
+    .map(json => {
+      Tweet.fromString(json)
+    }) // convert to domain class Tweet
     .filter(_ != null)
 
     // create multiple TweetWord objects from 1 Tweet object. Keep the Timestamp, but split the text in words
@@ -68,19 +74,49 @@ object StyxTwitterAnalysisJob extends App with Logging with EmbeddedIgnite {
   val windowedTweets = tweetStream
     .withWatermark("created_at", "1 second")
     .groupBy(
-      // sliding window of 60 seconds, evaluated every 30 seconds
-      window($"created_at", "60 seconds", "30 seconds"),
+      // sliding window of 2 seconds, evaluated every 1 second
+      window($"created_at", "2 seconds", "1 second"),
       $"word")
-    .count()
+    //.count()
+    .agg(count("word") as "count")
+    .select("window.start", "window.end", "word", "count")
+    .filter("count > 2")
 
-  // windowedTweets is a sql.DataFrame
+  val igniteSink = windowedTweets
+    .map(row => {
+      id = id + 1
+      TweetWindowTrend(
+        id.toString,
+        row.getAs[Timestamp]("start"),
+        row.getAs[Timestamp]("end"),
+        row.getAs[String]("word"),
+        row.getAs[Long]("count"))
+    })
+    .map(t => {
+      dbWriter.putDomainEntity("top_tweets", t)
+      t
+    })
 
-  // cache the word counts per window
+  //  val writer = new JdbcSink("org.apache.ignite.IgniteJdbcThinDriver", config.igniteConfig.url, "top_tweets", columns)
+  //
+  //  val igniteSink = windowedTweets
+  //    .writeStream
+  //      .foreach(writer)
+  //    .outputMode("complete")
+  //    .start()
+  //
+  //  igniteSink.awaitTermination()
 
+  val output = igniteSink.writeStream.format("console").start()
 
-
-  val output = windowedTweets.writeStream.format("console").start()
-
+  // Have all the aggregates in an in-memory table
+  //  aggDF
+  //    .writeStream
+  //    .queryName("aggregates")    // this query name will be the table name
+  //    .outputMode("complete")
+  //    .format("memory")
+  //    .start()
+  //
   output.awaitTermination()
 
   ///// part 1b CEP: look at 2 periods (e.g. hours) and calculate slope, find top 5 /////
@@ -108,7 +144,8 @@ object StyxTwitterAnalysisJob extends App with Logging with EmbeddedIgnite {
   }
 
   def createTables(dbWriter: DatabaseWriter) = {
-    dbWriter.createTable("top_tweets", None, Some(List(Column("window", ColumnType.TIMESTAMP), Column("word", ColumnType.TEXT), Column("count", ColumnType.INT))))
+    dbWriter.deleteTable("top_tweets")
+    dbWriter.createTable("top_tweets", None, Some(columns))
     LOG.info("Database tables created")
   }
 }

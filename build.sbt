@@ -20,7 +20,7 @@ val sparkKafkaV = "0-10"
 val embeddedKafkaV = "1.0.0"
 val codehaleMetricsV = "3.0.2"
 val jpmmlV = "1.4.11"
-val igniteV = "2.7.5"
+val igniteV = "2.7.6"
 
 lazy val commonSettings = Seq(
   organization := "github.com/streaming-analytics",
