@@ -4,6 +4,7 @@ import java.sql.Timestamp
 
 import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.{Tweet, TweetWord}
+import ai.styx.domain.utils.{Column, ColumnType}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
@@ -40,7 +41,8 @@ object StyxTwitterAnalysisJob extends App with Logging with EmbeddedIgnite {
     .load()
 
   // connect to Ignite
-  val dbWriter: DatabaseWriter = new IgniteFactory(config.igniteConfig)
+  val dbWriter: DatabaseWriter = new IgniteFactory(config.igniteConfig.url).createWriter.asInstanceOf[DatabaseWriter]
+  createTables(dbWriter)
 
   ///// part 1a CEP: count the words per period /////
 
@@ -103,5 +105,10 @@ object StyxTwitterAnalysisJob extends App with Logging with EmbeddedIgnite {
     val date = new DateTime(ts)
 
     new Timestamp(date.year().get, date.monthOfYear().get, date.dayOfMonth().get, date.hourOfDay().get, date.minuteOfHour().get, 0, 0)
+  }
+
+  def createTables(dbWriter: DatabaseWriter) = {
+    dbWriter.createTable("top_tweets", None, Some(List(Column("window", ColumnType.TIMESTAMP), Column("word", ColumnType.TEXT), Column("count", ColumnType.INT))))
+    LOG.info("Database tables created")
   }
 }

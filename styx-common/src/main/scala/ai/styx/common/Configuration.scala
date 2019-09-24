@@ -32,7 +32,7 @@ class KafkaConfiguration(config: Configuration) {
 class IgniteConfiguration(config: Configuration) {
   private lazy val igniteConfig = config.getConfig("ignite")
 
-
+  lazy val url: String = igniteConfig.getString("url")
 }
 
 class Configuration {
@@ -51,6 +51,7 @@ class Configuration {
   lazy val kafkaProducerProperties: Properties = Configuration.propertiesFromConfig(getConfig("kafka.producer"))
 
   lazy val sparkConfig: SparkConfiguration = new SparkConfiguration(this)
+  lazy val igniteConfig: IgniteConfiguration = new IgniteConfiguration(this)
 }
 
 object Configuration {
