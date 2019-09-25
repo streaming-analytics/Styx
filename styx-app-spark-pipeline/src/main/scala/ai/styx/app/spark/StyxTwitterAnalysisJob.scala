@@ -8,8 +8,7 @@ import ai.styx.domain.utils.{Column, ColumnType}
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
-import org.joda.time.DateTime
-import ai.styx.frameworks.ignite.{EmbeddedIgnite, IgniteFactory}
+import ai.styx.frameworks.ignite.IgniteFactory
 import ai.styx.frameworks.interfaces.{DatabaseFetcher, DatabaseWriter}
 
 object StyxTwitterAnalysisJob extends App with Logging {
@@ -19,6 +18,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
   val minimumWordLength = 5
   val wordsToIgnore = Array("would", "could", "should", "sometimes", "maybe", "perhaps", "nothing", "please", "today", "twitter", "everyone", "people", "think", "where", "about", "still", "youre")
   val columns = List(Column("id", ColumnType.TEXT), Column("windowStart", ColumnType.TIMESTAMP), Column("windowEnd", ColumnType.TIMESTAMP), Column("word", ColumnType.TEXT), Column("count", ColumnType.INT))
+  var windowCount = 0
 
   // connect to Spark
   val conf = new SparkConf()
@@ -81,8 +81,10 @@ object StyxTwitterAnalysisJob extends App with Logging {
     .select("window.start", "window.end", "word", "count")
     .filter("count > 2")
     .map(row => {
+      windowCount = windowCount + 1
       TweetWindowTrend(
         null,  // ID will be generated
+        windowCount,
         row.getAs[Timestamp]("start"),
         row.getAs[Timestamp]("end"),
         row.getAs[String]("word"),
@@ -95,18 +97,23 @@ object StyxTwitterAnalysisJob extends App with Logging {
       t
     })
 
-  val output = igniteSink.writeStream.format("console").start()
+  val output = igniteSink.writeStream.start()  // .format("console").start()
   output.awaitTermination()
 
   // compare current window to previous one
-  windowedTweets.map(w => {
+  val trends = windowedTweets.map(w => {
     // for each word: find the number of words in previous window
-    dbFetcher.getItems("top_tweets", )
+    dbFetcher
+      .getItems("windowId", (windowCount - 1).toString, "top_tweets")
+      //.map(x => x.map(y => y.map(z => LOG.info(z._1 + "=" + z._2))))
 
     // calculate slope / delta
 
     // sort the deltas to determine top trends
   })
+
+  val trendsOutput = trends.writeStream.format("console").start()
+  trendsOutput.awaitTermination()
 
   // delete older windows from cache
 

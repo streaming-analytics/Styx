@@ -1,7 +1,13 @@
 package ai.styx.frameworks.ignite
 
 import java.sql.{DriverManager, ResultSet}
+import java.util
+
+import scala.collection.JavaConverters._
+import ai.styx.common.StringHelper
 import ai.styx.frameworks.interfaces.DatabaseFetcher
+
+import scala.collection.mutable.ListBuffer
 
 class Fetcher(url: String) extends DatabaseFetcher {
   override def getItemCount(tableName: String): Long = ???
@@ -40,7 +46,39 @@ class Fetcher(url: String) extends DatabaseFetcher {
 
   override def getItems(tableName: String): Option[List[Map[String, AnyRef]]] = ???
 
-  override def getItems(column: String, filter: String, tableName: String): Option[List[Map[String, AnyRef]]] = ???
+  override def getItems(column: String, filter: String, tableName: String): Option[List[Map[String, AnyRef]]] = {
+    val conn = DriverManager.getConnection(url) // create new connection, ensure multi-threading
+    val sql = conn.createStatement()
+
+    val maybeInt = StringHelper.toInt(filter)
+    val query = if (maybeInt.isDefined)
+      s"SELECT * FROM $tableName WHERE $column=${maybeInt.get};"
+    else
+      s"SELECT * FROM $tableName WHERE $column='$filter';"
+
+    LOG.debug(query)
+    LOG.info(s"Getting item where $column=$filter from table $tableName...")
+
+    try {
+      val rs = sql.executeQuery(query)
+
+      val list = ListBuffer[Map[String, AnyRef]]()
+
+      while (rs.next()) {
+        list.append(getMap(rs))
+      }
+
+      // TODO: move to finally
+      sql.close()
+      conn.close()
+
+      Some(list.toList)
+    } catch {
+      case t: Throwable =>
+        LOG.error(s"Unable to get item from $tableName where $column=$filter: ${t.getMessage}", t)
+        None
+    }
+  }
 
   private def getMap(rs: ResultSet): Map[String, AnyRef] = {
     val rsmd = rs.getMetaData

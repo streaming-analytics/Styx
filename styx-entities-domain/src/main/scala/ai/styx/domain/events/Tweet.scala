@@ -72,4 +72,4 @@ object Tweet extends Logging {
 
 case class TweetWord(created_at: Timestamp, word: String)
 
-case class TweetWindowTrend(id: String, windowStart: Timestamp, windowEnd: Timestamp, word: String, count: Long) extends DomainEntity(id)
+case class TweetWindowTrend(id: String, windowId: Int, windowStart: Timestamp, windowEnd: Timestamp, word: String, count: Long) extends DomainEntity(id)
