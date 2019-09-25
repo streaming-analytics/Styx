@@ -10,7 +10,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.functions._
 import org.joda.time.DateTime
 import ai.styx.frameworks.ignite.{EmbeddedIgnite, IgniteFactory}
-import ai.styx.frameworks.interfaces.DatabaseWriter
+import ai.styx.frameworks.interfaces.{DatabaseFetcher, DatabaseWriter}
 
 object StyxTwitterAnalysisJob extends App with Logging {
   LOG.info("Spark version " + org.apache.spark.SPARK_VERSION)
@@ -42,7 +42,10 @@ object StyxTwitterAnalysisJob extends App with Logging {
     .load()
 
   // connect to Ignite
-  val dbWriter: DatabaseWriter = new IgniteFactory(config.igniteConfig.url).createWriter.asInstanceOf[DatabaseWriter]
+  val dbFactory = new IgniteFactory(config.igniteConfig.url)
+  val dbWriter: DatabaseWriter = dbFactory.createWriter
+  val dbFetcher: DatabaseFetcher = dbFactory.createFetcher
+
   createTables(dbWriter)
 
   ///// part 1a CEP: count the words per period /////
@@ -77,8 +80,6 @@ object StyxTwitterAnalysisJob extends App with Logging {
     .agg(count("word") as "count")  // also possible: .count(), but that doesn't preserve the window details
     .select("window.start", "window.end", "word", "count")
     .filter("count > 2")
-
-  val igniteSink = windowedTweets
     .map(row => {
       TweetWindowTrend(
         null,  // ID will be generated
@@ -87,16 +88,27 @@ object StyxTwitterAnalysisJob extends App with Logging {
         row.getAs[String]("word"),
         row.getAs[Long]("count"))
     })
+
+  val igniteSink = windowedTweets
     .map(t => {
       dbWriter.putDomainEntity("top_tweets", t)
       t
     })
 
-  // TODO: compare windows
-  // igniteSink.map(t => t)
-
   val output = igniteSink.writeStream.format("console").start()
   output.awaitTermination()
+
+  // compare current window to previous one
+  windowedTweets.map(w => {
+    // for each word: find the number of words in previous window
+    dbFetcher.getItems("top_tweets", )
+
+    // calculate slope / delta
+
+    // sort the deltas to determine top trends
+  })
+
+  // delete older windows from cache
 
   // Have all the aggregates in an in-memory table
   //  aggDF

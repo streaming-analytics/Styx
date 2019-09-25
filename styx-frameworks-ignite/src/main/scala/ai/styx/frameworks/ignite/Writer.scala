@@ -12,11 +12,11 @@ import scala.util.{Failure, Success, Try}
 
 class Writer(url: String) extends DatabaseWriter {
   Class.forName("org.apache.ignite.IgniteJdbcThinDriver")
-  private val conn = DriverManager.getConnection(url)
 
   override def clearTable(tableName: String, indexColumns: Option[List[Column]], columns: Option[List[Column]]): Unit = ???
 
   override def deleteTable(tableName: String): Unit = {
+    val conn = DriverManager.getConnection(url)
     val sql = conn.createStatement()
 
     val query = s"DROP TABLE IF EXISTS $tableName;"
@@ -26,6 +26,7 @@ class Writer(url: String) extends DatabaseWriter {
   }
 
   override def createTable(tableName: String, indexColumns: Option[List[Column]], columns: Option[List[Column]]): Unit = {
+    val conn = DriverManager.getConnection(url)
     val sql = conn.createStatement()
 
     var allColumns = List[Column]()
@@ -63,8 +64,8 @@ class Writer(url: String) extends DatabaseWriter {
   }
 
   override def putItem(id: String, tableName: String, fieldMap: Map[Column, AnyRef]): Option[String] = {
-    val conn2 = DriverManager.getConnection(url)  // create new connection, ensure multi-threading
-    val sql = conn2.createStatement()
+    val conn = DriverManager.getConnection(url)  // create new connection, ensure multi-threading
+    val sql = conn.createStatement()
 
     val query: String = _createInsertQuery(id, fieldMap, tableName)
 
@@ -74,7 +75,7 @@ class Writer(url: String) extends DatabaseWriter {
     Try {
       sql.executeUpdate(query)
       sql.close()
-      conn2.close()
+      conn.close()
     } match {
       case Success(_) => Some(id)
       case Failure(e) =>
@@ -109,7 +110,7 @@ class Writer(url: String) extends DatabaseWriter {
     var values = s"'$id', "
 
     if (fieldMap.count(f => f._1.name == "db_timestamp") == 0) {
-      val now = DateTime.now.toString("yyyy-MM-dd HH:mm:ss.SSS")
+      val now = DateTime.now.toString(TIMESTAMP_PATTERN)
       values = values + s"'$now',  "
     }
 
@@ -122,9 +123,9 @@ class Writer(url: String) extends DatabaseWriter {
           case ColumnType.BOOLEAN => field._2
           case ColumnType.TIMESTAMP => {
             field._2 match {
-              case ts: Timestamp => DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").format(ts.toLocalDateTime)
-              case dt: DateTime => dt.toString("yyyy-MM-dd HH:mm:ss.SSS")
-              case l: java.lang.Long => new DateTime(l).toString("yyyy-MM-dd HH:mm:ss.SSS")
+              case ts: Timestamp => DateTimeFormatter.ofPattern(TIMESTAMP_PATTERN).format(ts.toLocalDateTime)
+              case dt: DateTime => dt.toString(TIMESTAMP_PATTERN)
+              case l: java.lang.Long => new DateTime(l).toString(TIMESTAMP_PATTERN)
               case s: String => s"'$s'"  // assuming this is in the correct format
               case x =>
                 LOG.error("Unknown date type in the Timestamp column")
