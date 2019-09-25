@@ -63,7 +63,8 @@ class Writer(url: String) extends DatabaseWriter {
   }
 
   override def putItem(id: String, tableName: String, fieldMap: Map[Column, AnyRef]): Option[String] = {
-    val sql = conn.createStatement()
+    val conn2 = DriverManager.getConnection(url)  // create new connection, ensure multi-threading
+    val sql = conn2.createStatement()
 
     val query: String = _createInsertQuery(id, fieldMap, tableName)
 
@@ -72,6 +73,8 @@ class Writer(url: String) extends DatabaseWriter {
 
     Try {
       sql.executeUpdate(query)
+      sql.close()
+      conn2.close()
     } match {
       case Success(_) => Some(id)
       case Failure(e) =>

@@ -16,3 +16,6 @@ bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic clickstr
 
 # list topics:
 bin/kafka-topics.sh --create --zookeeper localhost:2181 --list
+
+# delete topic:
+bin/kafka-topics.sh --delete --zookeeper localhost:2181 --topic clickstream

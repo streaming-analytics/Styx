@@ -77,8 +77,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
       // sliding window of 2 seconds, evaluated every 1 second
       window($"created_at", "2 seconds", "1 second"),
       $"word")
-    //.count()
-    .agg(count("word") as "count")
+    .agg(count("word") as "count")  // also possible: .count(), but that doesn't preserve the window details
     .select("window.start", "window.end", "word", "count")
     .filter("count > 2")
 
@@ -97,17 +96,11 @@ object StyxTwitterAnalysisJob extends App with Logging {
       t
     })
 
-  //  val writer = new JdbcSink("org.apache.ignite.IgniteJdbcThinDriver", config.igniteConfig.url, "top_tweets", columns)
-  //
-  //  val igniteSink = windowedTweets
-  //    .writeStream
-  //      .foreach(writer)
-  //    .outputMode("complete")
-  //    .start()
-  //
-  //  igniteSink.awaitTermination()
+  // TODO: compare windows
+ // igniteSink.map(t => t)
 
   val output = igniteSink.writeStream.format("console").start()
+  output.awaitTermination()
 
   // Have all the aggregates in an in-memory table
   //  aggDF
@@ -117,7 +110,6 @@ object StyxTwitterAnalysisJob extends App with Logging {
   //    .format("memory")
   //    .start()
   //
-  output.awaitTermination()
 
   ///// part 1b CEP: look at 2 periods (e.g. hours) and calculate slope, find top 5 /////
 
