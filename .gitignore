@@ -13,5 +13,5 @@ shared-local-instance.db
 *.pdf
 *.iml
 *.json
-/ignite/work/marshaller
 *.classname0
+/ignite/work/marshaller/
