@@ -272,6 +272,30 @@
                 </section>
 
                 <section>
+                    <h2>Event time</h2>
+                    <ul>
+                        <li>Events occur at certain time <span class="fragment fade-in" data-fragment-index="1">
+                                <b>&rAarr; event time</b></span></li>
+<!--                        <li>... but arrive a little while later <span class="fragment fade-in" data-fragment-index="1">-->
+<!--                                <b>&rAarr; ingestion time</b></span></li>-->
+                        <li>... and are processed later <span class="fragment fade-in" data-fragment-index="1">
+                                <b>&rAarr; processing time</b></span></li>
+                    </ul>
+                    <img src="img/EventTime.png" class="fragment" data-fragment-index="2" />
+
+                    <aside class="notes">
+                        Events can reach us <i>out-of-order</i>; by looking at the event time we can still detect the original
+                        order</li>
+                    </aside>
+                </section>
+
+                <section>
+                    <h2>Out-of-orderness</h2>
+                    <img src="img/EventTime_StarWars.png" class="stretch" /><br>
+                    <img src="img/Star_Wars_logo.png" style="width:200px;" />
+                </section>
+
+                <section>
                     <h2>Windows</h2>
                     <ul>
                         <li>In processing infinite streams, we usually look at a time <i>window</i> </li>
@@ -319,30 +343,6 @@
                     <aside class="notes">
                         !! groupBy, keyBy = divide across nodes?
                     </aside>
-                </section>
-
-                <section>
-                    <h2>Event time</h2>
-                    <ul>
-                        <li>Events occur at certain time <span class="fragment fade-in" data-fragment-index="1">
-                                <b>&rAarr; event time</b></span></li>
-<!--                        <li>... but arrive a little while later <span class="fragment fade-in" data-fragment-index="1">-->
-<!--                                <b>&rAarr; ingestion time</b></span></li>-->
-                        <li>... and are processed later <span class="fragment fade-in" data-fragment-index="1">
-                                <b>&rAarr; processing time</b></span></li>
-                    </ul>
-                    <img src="img/EventTime.png" class="fragment" data-fragment-index="2" />
-
-                    <aside class="notes">
-                        Events can reach us <i>out-of-order</i>; by looking at the event time we can still detect the original
-                        order</li>
-                    </aside>
-                </section>
-
-                <section>
-                    <h2>Out-of-orderness</h2>
-                    <img src="img/EventTime_StarWars.png" class="stretch" /><br>
-                    <img src="img/Star_Wars_logo.png" style="width:200px;" />
                 </section>
 
                 <section>
