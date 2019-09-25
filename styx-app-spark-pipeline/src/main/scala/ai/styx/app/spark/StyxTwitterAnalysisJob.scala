@@ -17,7 +17,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
   val config = Configuration.load()
   val minimumWordLength = 5
   val wordsToIgnore = Array("would", "could", "should", "sometimes", "maybe", "perhaps", "nothing", "please", "today", "twitter", "everyone", "people", "think", "where", "about", "still", "youre")
-  val columns = List(Column("id", ColumnType.TEXT), Column("windowStart", ColumnType.TIMESTAMP), Column("windowEnd", ColumnType.TIMESTAMP), Column("word", ColumnType.TEXT), Column("count", ColumnType.INT))
+  val columns = List(Column("id", ColumnType.TEXT), Column("windowId", ColumnType.INT), Column("windowStart", ColumnType.TIMESTAMP), Column("windowEnd", ColumnType.TIMESTAMP), Column("word", ColumnType.TEXT), Column("count", ColumnType.INT))
   var windowCount = 0
 
   // connect to Spark
@@ -75,16 +75,21 @@ object StyxTwitterAnalysisJob extends App with Logging {
     .withWatermark("created_at", "1 second")
     .groupBy(
       // sliding window of 2 seconds, evaluated every 1 second
-      window($"created_at", "2 seconds", "1 second"),
+      window(
+        $"created_at",
+        "2 seconds",
+        "1 second"),
       $"word")
     .agg(count("word") as "count")  // also possible: .count(), but that doesn't preserve the window details
-    .select("window.start", "window.end", "word", "count")
+    .withColumn("windowId", lit(windowCount))
+    .select("windowId", "window.start", "window.end", "word", "count")
+//    .selectExpr(s"$windowCount AS windowId")
     .filter("count > 2")
     .map(row => {
-      windowCount = windowCount + 1
+      //windowCount = windowCount + 1
       TweetWindowTrend(
         null,  // ID will be generated
-        windowCount,
+        row.getAs[Int]("windowId"),
         row.getAs[Timestamp]("start"),
         row.getAs[Timestamp]("end"),
         row.getAs[String]("word"),
@@ -97,15 +102,20 @@ object StyxTwitterAnalysisJob extends App with Logging {
       t
     })
 
-  val output = igniteSink.writeStream.start()  // .format("console").start()
-  output.awaitTermination()
+  //val output = igniteSink.writeStream.format("console").start()
+  //output.awaitTermination()
 
   // compare current window to previous one
-  val trends = windowedTweets.map(w => {
+  val trends = igniteSink.map(w => {
     // for each word: find the number of words in previous window
-    dbFetcher
+    val items = dbFetcher
       .getItems("windowId", (windowCount - 1).toString, "top_tweets")
-      //.map(x => x.map(y => y.map(z => LOG.info(z._1 + "=" + z._2))))
+
+    LOG.info(s"Found ${items.get.length} words in the previous window")
+    items.map(x => x.map(y => y.map(z => LOG.info(z._1 + "=" + z._2))))
+
+    "word"
+    //items
 
     // calculate slope / delta
 
