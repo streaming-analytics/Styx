@@ -20,9 +20,6 @@ object StyxTwitterAnalysisJob extends App with Logging {
   val wordsToIgnore = Array("would", "could", "should", "sometimes", "maybe", "perhaps", "nothing", "please", "today", "twitter", "everyone", "people", "think", "where", "about", "still", "youre")
   val columns = List(Column("id", ColumnType.TEXT), Column("windowStart", ColumnType.TIMESTAMP), Column("windowEnd", ColumnType.TIMESTAMP), Column("word", ColumnType.TEXT), Column("count", ColumnType.INT))
 
-  var id = 1
-  var windowCount = 0
-
   // connect to Spark
   val conf = new SparkConf()
     .setMaster("local[2]")
@@ -83,9 +80,8 @@ object StyxTwitterAnalysisJob extends App with Logging {
 
   val igniteSink = windowedTweets
     .map(row => {
-      id = id + 1
       TweetWindowTrend(
-        id.toString,
+        null,  // ID will be generated
         row.getAs[Timestamp]("start"),
         row.getAs[Timestamp]("end"),
         row.getAs[String]("word"),
@@ -97,7 +93,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
     })
 
   // TODO: compare windows
- // igniteSink.map(t => t)
+  // igniteSink.map(t => t)
 
   val output = igniteSink.writeStream.format("console").start()
   output.awaitTermination()
@@ -113,12 +109,9 @@ object StyxTwitterAnalysisJob extends App with Logging {
 
   ///// part 1b CEP: look at 2 periods (e.g. hours) and calculate slope, find top 5 /////
 
-  // TODO: use state, mapGroupsWithState
-
   ///// #2: ML, get notification /////
 
   ///// #3: Notification /////
-
 
   // sink the data to Kafka
   //  val ds = df
@@ -128,12 +121,6 @@ object StyxTwitterAnalysisJob extends App with Logging {
   //    .option("kafka.bootstrap.servers", "host1:port1,host2:port2")
   //    .option("topic", "topic1")
   //    .start()
-
-  def round(ts: Timestamp): Timestamp = {
-    val date = new DateTime(ts)
-
-    new Timestamp(date.year().get, date.monthOfYear().get, date.dayOfMonth().get, date.hourOfDay().get, date.minuteOfHour().get, 0, 0)
-  }
 
   def createTables(dbWriter: DatabaseWriter) = {
     dbWriter.deleteTable("top_tweets")

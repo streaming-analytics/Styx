@@ -1,16 +1,17 @@
 package ai.styx.frameworks.ignite
 
-import org.apache.ignite.cache.CacheKeyConfiguration
 import org.apache.ignite.configuration.IgniteConfiguration
 import org.apache.ignite.{Ignite, Ignition}
 
-import scala.io.Source
-
-// extend this to start a local Ignite cluster on 127.0.0.1 for unit testing
+/**
+  * Extend this to start a local Ignite cluster on 127.0.0.1 for unit testing
+  */
 trait EmbeddedIgnite {
-//  val cfg = new IgniteConfiguration()
-  //cfg.setCacheKeyConfiguration(new CacheKeyConfiguration("text", "id"))
+  val cfg = new IgniteConfiguration()
 
-   val ignite: Ignite = Ignition.start()
+  // will connect to a local Ignite, or will start a temporary local cluster
+  val ignite: Ignite = Ignition.getOrStart(cfg) //.start()
+
+  // alternative: specify the configuration in an xml file
   // val ignite: Ignite = Ignition.start(getClass.getResource("/embedded-ignite-config.xml").getPath)
 }
