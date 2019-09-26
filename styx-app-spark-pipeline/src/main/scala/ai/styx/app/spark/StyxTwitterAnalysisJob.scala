@@ -6,7 +6,7 @@ import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.{Tweet, TweetWindowTrend, TweetWord}
 import ai.styx.domain.utils.{Column, ColumnType}
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions._
 import ai.styx.frameworks.ignite.IgniteFactory
 import ai.styx.frameworks.interfaces.{DatabaseFetcher, DatabaseWriter}
@@ -18,7 +18,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
   val minimumWordLength = 5
   val wordsToIgnore = Array("would", "could", "should", "sometimes", "maybe", "perhaps", "nothing", "please", "today", "twitter", "everyone", "people", "think", "where", "about", "still", "youre")
   val columns = List(Column("id", ColumnType.TEXT), Column("windowId", ColumnType.INT), Column("windowStart", ColumnType.TIMESTAMP), Column("windowEnd", ColumnType.TIMESTAMP), Column("word", ColumnType.TEXT), Column("count", ColumnType.INT))
-  var windowCount = 0
+  var windowCount = 0L
 
   // connect to Spark
   val conf = new SparkConf()
@@ -66,7 +66,6 @@ object StyxTwitterAnalysisJob extends App with Logging {
         .toLowerCase()
         // create words
         .split("[ \\t]+")
-
       words.map(word => TweetWord(tweet.created_at, word))
     })
     .filter(tw => !wordsToIgnore.contains(tw.word) && tw.word.length >= minimumWordLength)
@@ -83,13 +82,11 @@ object StyxTwitterAnalysisJob extends App with Logging {
     .agg(count("word") as "count")  // also possible: .count(), but that doesn't preserve the window details
     .withColumn("windowId", lit(windowCount))
     .select("windowId", "window.start", "window.end", "word", "count")
-//    .selectExpr(s"$windowCount AS windowId")
     .filter("count > 2")
     .map(row => {
-      //windowCount = windowCount + 1
       TweetWindowTrend(
         null,  // ID will be generated
-        row.getAs[Int]("windowId"),
+   //     row.getAs[Long]("windowId"),
         row.getAs[Timestamp]("start"),
         row.getAs[Timestamp]("end"),
         row.getAs[String]("word"),
@@ -102,8 +99,32 @@ object StyxTwitterAnalysisJob extends App with Logging {
       t
     })
 
+
+
   //val output = igniteSink.writeStream.format("console").start()
   //output.awaitTermination()
+
+  val o = igniteSink.toDF().writeStream.foreachBatch { (batchDF: DataFrame, batchId: Long) =>
+    //windowCount = batchId
+    LOG.info("Batch ID: " + batchId)
+    //batchDF.map
+    // for each word: find the number of words in previous window
+    val items = dbFetcher
+      .getItems("windowId", (batchId - 1).toString, "top_tweets")
+
+    LOG.info(s"Found ${items.get.length} words in the previous window")
+    //items.map(x => x.map(y => y.map(z => LOG.info(z._1 + "=" + z._2))))
+
+    //"word"
+  }.format("console").start()
+
+  o.awaitTermination()
+
+  //val trends = igniteSink.writeStream.foreachBatch()
+
+//  { (batchDF: DataFrame, batchId: Long) =>
+//    ""
+//  }
 
   // compare current window to previous one
   val trends = igniteSink.map(w => {
@@ -155,5 +176,11 @@ object StyxTwitterAnalysisJob extends App with Logging {
     dbWriter.deleteTable("top_tweets")
     dbWriter.createTable("top_tweets", None, Some(columns))
     LOG.info("Database tables created")
+  }
+
+  def increment(): Long = {
+    windowCount = windowCount + 1
+    LOG.info("Window: " + windowCount)
+    windowCount
   }
 }

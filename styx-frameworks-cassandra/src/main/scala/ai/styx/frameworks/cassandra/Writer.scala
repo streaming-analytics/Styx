@@ -153,6 +153,7 @@ class Writer(node: String, port: Int, keyspace: String, tablePrefix: String) ext
         field._1.`type` match {
           case ColumnType.TEXT => s"'${field._2}'"
           case ColumnType.INT => field._2
+          case ColumnType.LONG => field._2
           case ColumnType.DOUBLE => field._2
           case ColumnType.BOOLEAN => field._2
           case ColumnType.TIMESTAMP => {

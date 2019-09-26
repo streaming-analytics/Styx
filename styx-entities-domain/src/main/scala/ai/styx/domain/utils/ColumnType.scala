@@ -5,7 +5,7 @@ import ai.styx.domain.utils.ColumnType.ColumnType
 
 object ColumnType extends Enumeration with Logging {
   type ColumnType = Value
-  val INT, TEXT, DOUBLE, BOOLEAN, TIMESTAMP = Value
+  val INT, LONG, TEXT, DOUBLE, BOOLEAN, TIMESTAMP = Value
 
   override def toString(): String = this.toString()
 
@@ -13,6 +13,7 @@ object ColumnType extends Enumeration with Logging {
     s.toLowerCase match {
       case "string" => TEXT
       case "int" => INT
+      case "long" => LONG  // BIGINT
       case "integer" => INT
       case "double" => DOUBLE
       case "boolean" => BOOLEAN

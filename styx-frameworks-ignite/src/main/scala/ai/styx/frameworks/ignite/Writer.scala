@@ -45,6 +45,7 @@ class Writer(url: String) extends DatabaseWriter {
         .filter(_.name != "id")
         .map(c => f"${c.name} ${c.`type` match {
           case ColumnType.TEXT => "VARCHAR(100)"
+          case ColumnType.LONG => "BIGINT"
           case _ => c.`type`
         }}").mkString(", ")
 
@@ -119,6 +120,7 @@ class Writer(url: String) extends DatabaseWriter {
         field._1.`type` match {
           case ColumnType.TEXT => s"'${field._2}'"
           case ColumnType.INT => field._2
+          case ColumnType.LONG => field._2
           case ColumnType.DOUBLE => field._2
           case ColumnType.BOOLEAN => field._2
           case ColumnType.TIMESTAMP => {

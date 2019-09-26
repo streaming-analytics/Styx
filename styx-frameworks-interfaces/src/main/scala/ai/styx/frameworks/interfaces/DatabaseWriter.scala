@@ -46,6 +46,7 @@ trait DatabaseWriter extends Logging {
         case None => Column(field._1, ColumnType.TEXT) -> "None"
         case _: String => Column(field._1, ColumnType.TEXT) -> field._2
         case _: java.lang.Integer => Column(field._1, ColumnType.INT) -> field._2
+        case _: java.lang.Long => Column(field._1, ColumnType.LONG) -> field._2
         case _: java.lang.Double => Column(field._1, ColumnType.DOUBLE) -> field._2
         case _: java.lang.Boolean => Column(field._1, ColumnType.BOOLEAN) -> field._2
         case ts: Timestamp => Column(field._1, ColumnType.TIMESTAMP) -> DateTimeFormatter.ofPattern(TIMESTAMP_PATTERN).format(ts.toLocalDateTime)
