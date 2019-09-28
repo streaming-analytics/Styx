@@ -9,4 +9,5 @@ trait DatabaseFetcher extends Logging {
 
   def getItems(tableName: String): Option[List[Map[String, AnyRef]]]
   def getItems(column: String, filter: String, tableName: String): Option[List[Map[String, AnyRef]]]
+  def getItems(column: String, from: String, to: String, tableName: String): Option[List[Map[String, AnyRef]]]
 }

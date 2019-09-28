@@ -107,6 +107,29 @@ class Fetcher(node: String, port: Int, keyspace: String, tablePrefix: String) ex
     }
   }
 
+  override def getItems(column: String, from: String, to: String, tableName: String): Option[List[Map[String, AnyRef]]] = {
+    try {
+      val tableNameWithPrefix = s"${tablePrefix}_$tableName"
+
+      val query = s"SELECT * FROM $tableNameWithPrefix WHERE $column BETWEEN '$from' AND '$to';"
+      val result = session.execute(query)
+
+      val rows = result.all().iterator()
+
+      var items: ListBuffer[Map[String, AnyRef]] = scala.collection.mutable.ListBuffer[Map[String, AnyRef]]()
+      while (rows.hasNext) {
+        items.append(_createFieldMapFrom(rows.next()))
+      }
+
+      Some(items.toList)
+    }
+    catch {
+      case t: Throwable =>
+        LOG.error(s"Unable to get all items from ${tablePrefix}_$tableName: ${t.getMessage}", t)
+        None
+    }
+  }
+
   private def _createFieldMapFrom(row: Row): Map[String, AnyRef] = {
     var map = Map[String, AnyRef]()
 
