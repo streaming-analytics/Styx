@@ -34,7 +34,7 @@ class WriterSpec extends BaseSpec with EmbeddedIgnite {
   }
 
   it should "fetch a domain entity based on a where clause" in {
-    val t = TweetWindowTrend("id_test_2", 21, stamp, stamp, "testword", 98)
+    val t = TweetWindowTrend("id_test_2", 2, stamp, stamp, "testword", 98)
     dbWriter.putDomainEntity("trends", t)
 
     val items = dbFetcher.getItems("windowId", "21", "trends")

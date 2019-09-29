@@ -5,11 +5,11 @@ import java.sql.Timestamp
 import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.{Tweet, TweetWindowTrend, TweetWord}
 import ai.styx.domain.utils.{Column, ColumnType}
-import org.apache.spark.SparkConf
-import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.sql.functions._
 import ai.styx.frameworks.ignite.IgniteFactory
 import ai.styx.frameworks.interfaces.{DatabaseFetcher, DatabaseWriter}
+import org.apache.spark.SparkConf
+import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.functions._
 
 object StyxTwitterAnalysisJob extends App with Logging {
   LOG.info("Spark version " + org.apache.spark.SPARK_VERSION)
@@ -17,8 +17,12 @@ object StyxTwitterAnalysisJob extends App with Logging {
   val config = Configuration.load()
   val minimumWordLength = 5
   val wordsToIgnore = Array("would", "could", "should", "sometimes", "maybe", "perhaps", "nothing", "please", "today", "twitter", "everyone", "people", "think", "where", "about", "still", "youre")
-  val columns = List(Column("id", ColumnType.TEXT), Column("windowId", ColumnType.INT), Column("windowStart", ColumnType.TIMESTAMP), Column("windowEnd", ColumnType.TIMESTAMP), Column("word", ColumnType.TEXT), Column("count", ColumnType.INT))
-  var windowCount = 0L
+  val columns = List(Column("id", ColumnType.TEXT), Column("windowStart", ColumnType.TIMESTAMP), Column("windowEnd", ColumnType.TIMESTAMP), Column("word", ColumnType.TEXT), Column("count", ColumnType.INT))
+
+  val minimumWordCount = 10
+  val windowSizeInSeconds = 20
+  val slideSizeInSeconds = 2
+  val watermarkSeconds = 1
 
   // connect to Spark
   val conf = new SparkConf()
@@ -38,7 +42,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
     .format("kafka")
     .option("kafka.bootstrap.servers", "localhost:9092")
     .option("subscribe", "tweets")
-    .option("startingOffsets", "earliest")
+    .option("startingOffsets", "latest")
     .load()
 
   // connect to Ignite
@@ -46,7 +50,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
   val dbWriter: DatabaseWriter = dbFactory.createWriter
   val dbFetcher: DatabaseFetcher = dbFactory.createFetcher
 
-  createTables(dbWriter)
+  //createTables(dbWriter)
 
   ///// part 1a CEP: count the words per period /////
 
@@ -70,80 +74,62 @@ object StyxTwitterAnalysisJob extends App with Logging {
     })
     .filter(tw => !wordsToIgnore.contains(tw.word) && tw.word.length >= minimumWordLength)
 
+  /**
+    * If the timestamp is in the first half of the window: 0, else 1
+    */
+  val calculateWindowPart = udf[Int, Timestamp, Timestamp, Timestamp]((created, start, end) => {
+    // ! timestamps of Tweets are rounded in seconds
+    // for example:
+    // windowSizeInSeconds = 10
+    // start window: 15:08:11
+    // end window: 15:08:21
+    // timestamp: 15:08:12 ==> window 1
+    // timestamp: 15:08:18 ==> window 2
+
+    val halftimeMillis = start.getTime + ((end.getTime - start.getTime) / 2)
+
+    if (created.getTime < halftimeMillis) 0 else 1
+  })
+
   val windowedTweets = tweetStream
-    .withWatermark("created_at", "1 second")
+    .withWatermark("created_at", s"$watermarkSeconds seconds")
     .groupBy(
       // sliding window of 2 seconds, evaluated every 1 second
       window(
         $"created_at",
-        "2 seconds",
-        "1 second"),
-      $"word")
-    .agg(count("word") as "count")  // also possible: .count(), but that doesn't preserve the window details
-    .withColumn("windowId", lit(windowCount))
-    .select("windowId", "window.start", "window.end", "word", "count")
-    .filter("count > 2")
+        s"$windowSizeInSeconds seconds"),
+        //s"$slideSizeInSeconds second"),  // use for sliding window
+      $"word", $"created_at")
+    .agg(count("word") as "count", calculateWindowPart($"created_at", $"window.start", $"window.end") as "windowPart")
+    .sort( "windowPart", "window.start", "count")
+    .select("windowPart", "window.start", "window.end", "word", "count")
+    .filter(s"count > $minimumWordCount")
     .map(row => {
       TweetWindowTrend(
         null,  // ID will be generated
-   //     row.getAs[Long]("windowId"),
+        row.getAs[Int]("windowPart"),
         row.getAs[Timestamp]("start"),
         row.getAs[Timestamp]("end"),
         row.getAs[String]("word"),
         row.getAs[Long]("count"))
     })
 
-  val igniteSink = windowedTweets
-    .map(t => {
-      dbWriter.putDomainEntity("top_tweets", t)
-      t
-    })
+  val trends = windowedTweets
 
+//  val igniteSink = windowedTweets
+//    .map(t => {
+//      dbWriter.putDomainEntity("top_tweets", t)
+//      t
+//    })
 
+  // compare the first half of the window by the second one; we can do this by looking at the event time
 
-  //val output = igniteSink.writeStream.format("console").start()
-  //output.awaitTermination()
+  val trendsOutput = trends
+    .writeStream
+    .format("console")
+    .outputMode("Complete")
+    .start()
 
-  val o = igniteSink.toDF().writeStream.foreachBatch { (batchDF: DataFrame, batchId: Long) =>
-    //windowCount = batchId
-    LOG.info("Batch ID: " + batchId)
-    //batchDF.map
-    // for each word: find the number of words in previous window
-    val items = dbFetcher
-      .getItems("windowId", (batchId - 1).toString, "top_tweets")
-
-    LOG.info(s"Found ${items.get.length} words in the previous window")
-    //items.map(x => x.map(y => y.map(z => LOG.info(z._1 + "=" + z._2))))
-
-    //"word"
-  }.format("console").start()
-
-  o.awaitTermination()
-
-  //val trends = igniteSink.writeStream.foreachBatch()
-
-//  { (batchDF: DataFrame, batchId: Long) =>
-//    ""
-//  }
-
-  // compare current window to previous one
-  val trends = igniteSink.map(w => {
-    // for each word: find the number of words in previous window
-    val items = dbFetcher
-      .getItems("windowId", (windowCount - 1).toString, "top_tweets")
-
-    LOG.info(s"Found ${items.get.length} words in the previous window")
-    items.map(x => x.map(y => y.map(z => LOG.info(z._1 + "=" + z._2))))
-
-    "word"
-    //items
-
-    // calculate slope / delta
-
-    // sort the deltas to determine top trends
-  })
-
-  val trendsOutput = trends.writeStream.format("console").start()
   trendsOutput.awaitTermination()
 
   // delete older windows from cache
@@ -178,9 +164,4 @@ object StyxTwitterAnalysisJob extends App with Logging {
     LOG.info("Database tables created")
   }
 
-  def increment(): Long = {
-    windowCount = windowCount + 1
-    LOG.info("Window: " + windowCount)
-    windowCount
-  }
 }

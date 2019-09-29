@@ -1,6 +1,6 @@
 package ai.styx.frameworks.ignite
 
-import java.sql.{DriverManager, ResultSet}
+import java.sql.{Connection, DriverManager, ResultSet}
 
 import ai.styx.common.StringHelper
 import ai.styx.frameworks.interfaces.DatabaseFetcher
@@ -43,6 +43,8 @@ class Fetcher(url: String) extends DatabaseFetcher {
   }
 
   override def getItems(tableName: String): Option[List[Map[String, AnyRef]]] = {
+    val conn = DriverManager.getConnection(url)
+
     val query = s"SELECT * FROM $tableName;"
 
     getItems(query)
@@ -63,6 +65,8 @@ class Fetcher(url: String) extends DatabaseFetcher {
   }
 
   override def getItems(column: String, from: String, to: String, tableName: String): Option[List[Map[String, AnyRef]]] = {
+    val conn = DriverManager.getConnection(url)
+
     val query = s"SELECT * FROM $tableName WHERE $column BETWEEN '$from' AND '$to';"
 
     LOG.info(s"Getting items where $column is between $from and $to from table $tableName...")
@@ -82,11 +86,10 @@ class Fetcher(url: String) extends DatabaseFetcher {
     map.toMap
   }
 
-  private def getItems(query: String): Option[List[Map[String, AnyRef]]] = {
+  private def getItems(conn: Connection, query: String): Option[List[Map[String, AnyRef]]] = {
     LOG.debug(query)
 
     try {
-      val conn = DriverManager.getConnection(url)
       val sql = conn.createStatement()
 
       val rs = sql.executeQuery(query)
