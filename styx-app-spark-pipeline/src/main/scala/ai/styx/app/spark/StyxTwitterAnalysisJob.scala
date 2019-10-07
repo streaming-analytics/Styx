@@ -19,8 +19,8 @@ object StyxTwitterAnalysisJob extends App with Logging {
   val wordsToIgnore = Array("would", "could", "should", "sometimes", "maybe", "perhaps", "nothing", "please", "today", "twitter", "everyone", "people", "think", "where", "about", "still", "youre")
   val columns = List(Column("id", ColumnType.TEXT), Column("windowStart", ColumnType.TIMESTAMP), Column("windowEnd", ColumnType.TIMESTAMP), Column("word", ColumnType.TEXT), Column("count", ColumnType.INT))
 
-  val minimumWordCount = 10
-  val windowSizeInSeconds = 20
+  val minimumWordCount = 20
+  val windowSizeInSeconds = 10
   val slideSizeInSeconds = 2
   val watermarkSeconds = 1
 
@@ -99,9 +99,9 @@ object StyxTwitterAnalysisJob extends App with Logging {
         $"created_at",
         s"$windowSizeInSeconds seconds"),
         //s"$slideSizeInSeconds second"),  // use for sliding window
-      $"word", $"created_at")
-    .agg(count("word") as "count", calculateWindowPart($"created_at", $"window.start", $"window.end") as "windowPart")
-    .sort( "windowPart", "window.start", "count")
+      $"word", calculateWindowPart($"created_at", $"window.start", $"window.end") as "windowPart")
+    .agg(count("word") as "count", $"word", $"window.start", $"window.end")
+    .sort( asc("window.start"), asc("windowPart"), desc("count"))
     .select("windowPart", "window.start", "window.end", "word", "count")
     .filter(s"count > $minimumWordCount")
     .map(row => {

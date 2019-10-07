@@ -29,7 +29,7 @@ object KafkaDataGenerator extends App with Logging {
       val r = Random.nextInt(10)
       if (r < 3) {
         tweets.append(tweet.copy(text = tweet.text + " Kafka"))
-      } else if (r < 5) {
+      } else if (r < 6) {
         tweets.append(tweet.copy(text = tweet.text + " Spark"))
       } else if (r < 9) {
         tweets.append(tweet.copy(text = tweet.text + " Ignite"))
