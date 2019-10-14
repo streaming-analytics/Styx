@@ -237,14 +237,20 @@
                         <li>Parallelism can be configured on cluster level (YARN) and on job level (number of executors)</li>
                     </ul>
 
+<!--                    <pre><code data-trim>-->
+<!--                    spark.executor.cores=2, spark.task.cpus=1-->
+<!--                    </code></pre>-->
+
                     <pre><code data-trim>
-                    spark.executor.cores=2, spark.task.cpus=1
+  val conf = new SparkConf()
+    .setMaster("local[8]")
+    .setAppName("FraudDetection")
                     </code></pre>
 
                     <pre><code data-trim>
   val conf = new SparkConf()
     .setMaster("local[2]")
-    .setAppName("Styx")
+    .setAppName("LowMoneyAlert")
                     </code></pre>
                 </section>
 
@@ -328,8 +334,10 @@
                         <li><b>Evaluation</b>: do all calculations within one window, or keep a cache across multiple windows (e.g. when comparing windows, like in trend analysis)</li>
                         <li><b>Timing</b>: events for a window can appear <i>early</i> or <i>late</i></li>
                     </ul>
-                    <p>Fraud detection: sliding window of 1 day</p>
-                    <p>Actionable insights: tumbling window of 1 hour</p>
+                    <aside class="notes">
+                        <p>Fraud detection: sliding window of 1 day</p>
+                        <p>Actionable insights: tumbling window of 1 hour</p>
+                    </aside>
                 </section>
 
                 <section>
@@ -369,7 +377,7 @@
                     <h2>Event Time and Watermarks</h2>
                     <p>Example: sliding window of 60 seconds, evaluated every 30 seconds. The watermark is set at 1 second, giving all events a second of event time to arrive</p>
                     <pre><code data-trim>
-  val windowedTweets = tweetStream
+  val windowedTweets = transactionStream
     .withWatermark("created_at", "1 second")
     .groupBy(
       window($"created_at", "60 seconds", "30 seconds"),
@@ -500,6 +508,7 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
                 <h2>Wrap-up</h2>
                 <ul>
                     <li>There are plenty of streaming analytics use cases, in any business domain</li>
+                    <li>In financial services, fraud detection and marketing are </li>
                     <li>The common pattern is: CEP &rarr; ML &rarr; Notification</li>
                     <li>Pick the right tools for the job; Kafka, Ignite, and Spark are amongst the best</li>
                     <li>Be aware of typical streaming data issues: late events, state management, windows, etc.</li>
