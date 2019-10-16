@@ -128,7 +128,7 @@
                             <tr>
                                 <td>Insurance</td>
                                 <td>Page visits</td>
-                                <td>Customer is stuck in form</td>
+                                <td>Customer is stuck in a web form</td>
                                 <td>Chat window</td>
                             </tr>
                             <tr>
@@ -148,12 +148,6 @@
                                 <td>Machine logs</td>
                                 <td>System failure</td>
                                 <td>Alert to sys admin</td>
-                            </tr>
-                            <tr>
-                                <td>Gaming</td>
-                                <td>Player actions</td>
-                                <td>Key combos</td>
-                                <td>Action on screen</td>
                             </tr>
                         </tbody>
                     </table>
@@ -252,7 +246,8 @@
                     <h2>Parallelism</h2>
                     <ul>
                         <li>To get high throughput, we have to process the events in parallel</li>
-                        <li>Parallelism can be configured on cluster level (YARN) and on job level (number of executors)</li>
+                        <li>Parallelism can be configured on cluster level (YARN) and on job level (number of worker threads)</li>
+<!--                        <li>http://spark.apache.org/docs/latest/configuration.html</li>-->
                     </ul>
 
 <!--                    <pre><code data-trim>-->
@@ -262,13 +257,13 @@
                     <pre><code data-trim>
   val conf = new SparkConf()
     .setMaster("local[8]")
-    .setAppName("FraudDetection")
+    .setAppName("FraudNumberOfTransactions")
                     </code></pre>
 
                     <pre><code data-trim>
-  val conf = new SparkConf()
-    .setMaster("local[2]")
-    .setAppName("LowMoneyAlert")
+./bin/spark-submit --name "LowMoneyAlert" --master local[4]
+  --conf "spark.dynamicAllocation.enabled=true"
+  --conf "spark.dynamicAllocation.maxExecutors=2" styx.jar
                     </code></pre>
                 </section>
 
@@ -282,6 +277,7 @@
     .config(conf)
     .getOrCreate()
 
+  // for using DataFrames
   import spark.sqlContext.implicits._
 
   // get the data from Kafka: subscribe to topic
@@ -363,12 +359,12 @@
                     <p>Example: sliding window of 1 day, evaluated every 15 minutes over the field 'customer_id'.
                         The event time is stored in the field 'transaction_time'</p>
                     <pre><code data-trim>
-  // aggregate
+  // aggregate, produces a sql.DataFrame
   val windowedTransactions = transactionStream
     .groupBy(
       window($"transaction_time", "1 day", "15 minutes"),
       $"customer_id")
-    .agg(...)  // e.g. count/sum/..., produces a sql.DataFrame
+    .agg(count("t_id") as "count", $"customer_id", $"window.end")
                     </code></pre>
 
                     <aside class="notes">
@@ -390,14 +386,15 @@
 
                 <section>
                     <h2>Event Time and Watermarks</h2>
-                    <p>Example: sliding window of 60 seconds, evaluated every 30 seconds. The watermark is set at 1 second, giving all events a second of event time to arrive</p>
+                    <p>Example: sliding window of 60 seconds, evaluated every 30 seconds.
+                        The watermark is set at 1 second, giving all events some time to arrive.</p>
                     <pre><code data-trim>
   val windowedTransactions = transactionStream
     .withWatermark("created_at", "1 second")
     .groupBy(
       window($"transaction_time", "60 seconds", "30 seconds"),
       $"customer_id")
-    .agg(...)  // e.g. count/sum/..., produces a sql.DataFrame
+    .agg(...)  // e.g. count/sum/...
                     </code></pre>
                     <aside class="notes">
                         Kafka is a replayable data source. The checkpoint is made in a write-ahead log.
@@ -406,11 +403,17 @@
 
                 <section>
                     <h2>Fault-tolerance and checkpointing</h2>
+                    <p></p>
                     <ul>
-                        <li>Data is in one of three stages: unprocessed &rAarr; in transit &rAarr; processed</li>
-                        <li>Kafka consumers provide <i>offsets</i> that guarantee no data loss for unprocessed data</li>
-                        <li>Data in transit can be preserved in a <i>checkpoint</i>, to make sure that this is available again after a crash</li>
-                        <li>Kafka provides an acknowledgement once data is written</li>
+                        <li>Data is in one of three stages:</li>
+                        <ul>
+                            <li><b>Unprocessed</b> <span class="fragment fade-in" data-fragment-index="1">
+                            &rAarr; Kafka consumers provide <i>offsets</i> that guarantee no data loss for unprocessed data</span></li>
+                            <li><b>In transit</b> <span class="fragment fade-in" data-fragment-index="1">
+                            &rAarr; data can be preserved in a <i>checkpoint</i>, to reload and replay it after a crash</span></li>
+                            <li><b>Processed</b> <span class="fragment fade-in" data-fragment-index="1">
+                            &rAarr; Kafka provides an acknowledgement once data is written</span></li>
+                        </ul>
                     </ul>
                 </section>
 
@@ -441,7 +444,7 @@
                         <li>The resulting data object contains the characteristics (features) as input for a model</li>
                         <li class="fragment" data-fragment-index="1">To get the features and score the model, efficiency plays a role again:</li>
                         <ul class="fragment" data-fragment-index="1">
-                            <li>In-memory data cache > API call</li>
+                            <li>Direct database call > API call</li>
                             <li>In-memory model cache > model on disk</li>
                         </ul>
                     </ul>
