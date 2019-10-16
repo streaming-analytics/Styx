@@ -289,8 +289,8 @@
     .readStream
     .format("kafka")
     .option("kafka.bootstrap.servers", "localhost:9092")
-    .option("subscribe", "tweets")
-    .option("startingOffsets", "earliest")
+    .option("subscribe", "transactions")
+    .option("startingOffsets", "latest")
     .load()
                 </code></pre>
                 </section>
@@ -363,10 +363,12 @@
                     <p>Example: sliding window of 1 day, evaluated every 15 minutes over the field 'customer_id'.
                         The event time is stored in the field 'transaction_time'</p>
                     <pre><code data-trim>
+  // aggregate
   val windowedTransactions = transactionStream
     .groupBy(
       window($"transaction_time", "1 day", "15 minutes"),
       $"customer_id")
+    .agg(...)  // e.g. count/sum/..., produces a sql.DataFrame
                     </code></pre>
 
                     <aside class="notes">
@@ -384,28 +386,46 @@
 <!--                        <li class="fragment" data-fragment-index="2">In Flink, it's possible to allow late events to trigger re-computation-->
 <!--                            of a window by setting the <i>allowedLateness</i> property</li>-->
                     </ul>
-                    <aside class="notes">
-                        How do we know when to calculate a window?<br> Watermarks assert that all earlier events have (probably)
-                        arrived<br> (other triggers are also possible: processing time, punctuations (data-dependent).<br>                        IF
-                        eventTime < watermark THEN Ignore ELSE Process Example: tumbling window of one hour, watermark is
-                            1 minute. af 14:02 an event comes in with an event time of 13:59 </aside>
                 </section>
 
                 <section>
                     <h2>Event Time and Watermarks</h2>
                     <p>Example: sliding window of 60 seconds, evaluated every 30 seconds. The watermark is set at 1 second, giving all events a second of event time to arrive</p>
                     <pre><code data-trim>
-  val windowedTweets = transactionStream
+  val windowedTransactions = transactionStream
     .withWatermark("created_at", "1 second")
     .groupBy(
-      window($"created_at", "60 seconds", "30 seconds"),
-      $"word")
+      window($"transaction_time", "60 seconds", "30 seconds"),
+      $"customer_id")
+    .agg(...)  // e.g. count/sum/..., produces a sql.DataFrame
+                    </code></pre>
+                    <aside class="notes">
+                        Kafka is a replayable data source. The checkpoint is made in a write-ahead log.
+                    </aside>
+                </section>
+
+                <section>
+                    <h2>Fault-tolerance and checkpointing</h2>
+                    <ul>
+                        <li>Data is in one of three stages: unprocessed &rAarr; in transit &rAarr; processed</li>
+                        <li>Kafka consumers provide <i>offsets</i> that guarantee no data loss for unprocessed data</li>
+                        <li>Data in transit can be preserved in a <i>checkpoint</i>, to make sure that this is available again after a crash</li>
+                        <li>Kafka provides an acknowledgement once data is written</li>
+                    </ul>
+                </section>
+
+                <section>
+                    <h2>Sink the output to Kafka</h2>
+                    <pre><code data-trim>
+ businessEvents
+    .format("kafka")
+    .option("kafka.bootstrap.servers", "localhost:9092")
+    .option("topic", "business_events")
+    .option("checkpointLocation", "/hdfs/checkpoint")
+    .start()  // this triggers the start of the streaming query
                     </code></pre>
                 </section>
 
-<!--                <section>-->
-<!--                    <h2>Checkpointing</h2>-->
-<!--                </section>-->
             </section>
 
             <section>
@@ -493,44 +513,48 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
 
             </section>
 
-<!--            <section>-->
-<!--                <h2>Alternative stacks</h2>-->
-<!--                <small>-->
-<!--                <table>-->
-<!--                    <thead>-->
-<!--                    <tr>-->
-<!--                        <th>Message bus</th>-->
-<!--                        <th>Streaming technology</th>-->
-<!--                        <th>Database</th>-->
-<!--                    </tr>-->
-<!--                    </thead>-->
-<!--                    <tbody>-->
-<!--                    <tr>-->
-<!--                        <td>Kafka</td>-->
-<!--                        <td>Spark Structured Streaming</td>-->
-<!--                        <td>Ignite</td>-->
-<!--                    </tr>-->
-<!--                    <tr>-->
-<!--                        <td>Kafka</td>-->
-<!--                        <td>Flink</td>-->
-<!--                        <td>Cassandra</td>-->
-<!--                    </tr>-->
-<!--                    <tr>-->
-<!--                        <td>Kinesis Data Streams</td>-->
-<!--                        <td>Kinesis Data Firehose</td>-->
-<!--                        <td>DynamoDb</td>-->
-<!--                    </tr>-->
+            <section>
+                <h2>Alternative stacks</h2>
+                <small>
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Message bus</th>
+                        <th>Streaming technology</th>
+                        <th>Database</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td>Kafka</td>
+                        <td>Spark Structured Streaming</td>
+                        <td>Ignite</td>
+                    </tr>
+                    <tr>
+                        <td>Kafka</td>
+                        <td>Flink</td>
+                        <td>Cassandra</td>
+                    </tr>
+                    <tr>
+                        <td>Azure Event Hubs</td>
+                        <td>Azure Stream Analytics</td>
+                        <td>Cosmos DB</td>
+                    </tr>
+                    <tr>
+                        <td>AWS Kinesis Data Streams</td>
+                        <td>AWS Kinesis Data Firehose</td>
+                        <td>DynamoDb</td>
+                    </tr>
 
-<!--                    </tbody>-->
-<!--                </table>-->
-<!--                </small>-->
-<!--            </section>-->
+                    </tbody>
+                </table>
+                </small>
+            </section>
 
             <section>
                 <h2>Wrap-up</h2>
                 <ul>
-                    <li>There are plenty of streaming analytics use cases, in any business domain</li>
-                    <li>In financial services, fraud detection and marketing are </li>
+                    <li>Fraud detection and actionable insights are examples of streaming analytics use cases in financial services</li>
                     <li>The common pattern is: CEP &rarr; ML &rarr; Notification</li>
                     <li>Pick the right tools for the job; Kafka, Ignite, and Spark are amongst the best</li>
                     <li>Be aware of typical streaming data issues: late events, state management, windows, etc.</li>
