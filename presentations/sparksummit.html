@@ -188,10 +188,10 @@
             </section>
 
             <section>
-                <h2>The KISSS stack</h2>
+                <h2>The software stack</h2>
                 <ul>
                     <li>Data stream storage: <b>Kafka</b></li>
-                    <li>Persisting cache, rules, models, and config: <b>Ignite</b></li>
+                    <li>Persisting cache, rules, models, and config: <b>Cassandra</b> or <b>Ignite</b></li>
                     <li>Stream processing: <b>Spark Structured Streaming</b></li>
                     <li>Model scoring: <b>PMML</b> and <b>Openscoring.io</b></li>
                 </ul>
@@ -204,7 +204,25 @@
             </section>
 
             <section>
-                <h2>KISSS Architecture</h2>
+                <h2>Apache Spark libraries</h2>
+                <img src="img/spark.png" class="stretch">
+            </section>
+
+<!--            <section>-->
+<!--                <h2>Spark Streaming evolution</h2>-->
+<!--                <ul>-->
+<!--                    <li>2009: Spark started as a research project at UC Berkeley AMPLab</li>-->
+<!--                    <li>2010: Fist open source version of Spark</li>-->
+<!--                    <li>2013: Spark moved to the Apache Software Foundation</li>-->
+
+<!--                    <li>2016: Spark 2.0 includes beta version of Structured Streaming</li>-->
+<!--                    <li>2019: Spark 2.3 contains experimental feature of Continuous Processing</li>-->
+<!--                    <li>2020: Spark 3.0</li>-->
+<!--                </ul>-->
+<!--            </section>-->
+
+            <section>
+                <h2>Streaming Architecture</h2>
                 <img src="img/architecture_spark.png" class="stretch">
             </section>
 
@@ -384,6 +402,10 @@
       $"word")
                     </code></pre>
                 </section>
+
+<!--                <section>-->
+<!--                    <h2>Checkpointing</h2>-->
+<!--                </section>-->
             </section>
 
             <section>
