@@ -8,9 +8,8 @@ val typesafeV = "1.3.2"
 val jacksonV = "3.5.3"
 val scalatestV = "3.0.5"
 val circeV = "0.11.1"
-val flinkV = "1.7.0"
+val flinkV = "1.7.1"
 val flinkKafkaV = "0.11"
-val flinkKafkaConnectorV = "1.8.1"
 val cassandraV = "3.11.1"
 val cassandraDriverV = "3.3.2"
 val cassandraUnitV = "3.3.0.2"
@@ -87,7 +86,6 @@ lazy val kafkaDependencies = Seq(
   "org.apache.kafka" %% "kafka" % kafkaV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
   "org.apache.kafka" % "kafka-clients" % kafkaV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
   "net.manub" %% "scalatest-embedded-kafka" % embeddedKafkaV % "test",
-  "org.apache.flink" %% "flink-connector-kafka" % flinkKafkaConnectorV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
   "org.apache.flink" %% ("flink-connector-kafka-" + flinkKafkaV) % flinkV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12"),
   "org.apache.spark" %% ("spark-sql-kafka-" + sparkKafkaV) % sparkV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12")
 )

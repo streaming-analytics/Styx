@@ -11,7 +11,7 @@ import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows
 import org.apache.flink.streaming.api.windowing.time.Time
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer011
 import org.joda.time.DateTime
 
 object StyxClickstreamAnalysisJob extends App with Logging {
@@ -36,7 +36,7 @@ object StyxClickstreamAnalysisJob extends App with Logging {
   implicit val typeInfoListString = TypeInformation.of(classOf[List[CategoryCount]])
 
   val stream = env
-    .addSource(new FlinkKafkaConsumer[String](config.kafkaConfig.rawDataTopic, new SimpleStringSchema(), properties))
+    .addSource(new FlinkKafkaConsumer011[String](config.kafkaConfig.rawDataTopic, new SimpleStringSchema(), properties))
     .map(Click.fromString(_))
     // set event timestamp
     .assignTimestampsAndWatermarks(new ClickTimestampAndWatermarkGenerator).name("Getting event time")
