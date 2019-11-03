@@ -13,25 +13,33 @@ import org.joda.time.DateTime
 import scala.beans.BeanProperty
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-case class Transaction (
-                   @BeanProperty
-                   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss Z", locale = "en")
-                   @JsonProperty("time")
-                   @JsonDeserialize(using = classOf[TimestampDeserializer])
-                   time: Timestamp = null,
+case class Transaction(
+                        @BeanProperty
+                        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy HH:mm:ss Z", locale = "en")
+                        @JsonProperty("time")
+                        @JsonDeserialize(using = classOf[TimestampDeserializer])
+                        time: Timestamp = null,
 
-                   @BeanProperty
-                   @JsonProperty("description")
-                   description: String = null,
+                        @BeanProperty
+                        @JsonProperty("description")
+                        description: String = null,
 
-                   @BeanProperty
-                   @JsonProperty("amount")
-                   amount: Double = 0.0,
+                        @BeanProperty
+                        @JsonProperty("amount")
+                        amount: Double = 0.0,
 
-                   @BeanProperty
-                   @JsonProperty("currency")
-                   currency: String = "EURO"
-                       ) {
+                        @BeanProperty
+                        @JsonProperty("currency")
+                        currency: String = "EURO",
+
+                        @BeanProperty
+                        @JsonProperty("location")
+                        location: String = null,
+
+                        @BeanProperty
+                        @JsonProperty("customer_id")
+                        customerId: String = null
+                      ) {
   def created: Option[DateTime] = {
     try {
       Some(new DateTime(time.getTime))

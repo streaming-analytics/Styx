@@ -1,6 +1,5 @@
 package ai.styx.app.flink
 
-import ai.styx.app.flink.StyxTwitterAnalysisJob.{LOG, config, env}
 import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.Transaction
 import ai.styx.frameworks.kafka.{KafkaFactory, KafkaStringConsumer, KafkaStringProducer}
@@ -30,6 +29,7 @@ object StyxFraudDetectionJob extends App with Logging {
     .addSource(KafkaFactory.createMessageBusConsumer(config).asInstanceOf[KafkaStringConsumer])
 
   ///// Part 1: CEP --> check for unusual transaction counts per hour
+  stream.addSink(transaction => LOG.info(transaction))
 
   ///// Part 2: ML --> compare the transactions to customer context
 
