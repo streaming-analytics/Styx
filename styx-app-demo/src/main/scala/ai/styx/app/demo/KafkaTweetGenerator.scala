@@ -10,10 +10,10 @@ import ai.styx.frameworks.kafka.{KafkaFactory, KafkaStringProducer}
 import scala.io.Source
 import scala.util.Random
 
-object KafkaDataGenerator extends App with Logging {
+object KafkaTweetGenerator extends App with Logging {
 
   lazy val config: Configuration = Configuration.load()
-  val topic: String = Configuration.load().kafkaConfig.rawDataTopic
+  val topic: String = "tweets"
 
   val producer: KafkaStringProducer = KafkaFactory.createStringProducer(config.kafkaProducerProperties).asInstanceOf[KafkaStringProducer]
 

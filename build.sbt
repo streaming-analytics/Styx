@@ -130,7 +130,6 @@ lazy val styxUseCasesInterfaces = (project in file("styx-usecases-interfaces"))
     name := "styx-usecases-interfaces"
   )
 
-
 lazy val styxFrameworksCassandra = (project in file("styx-frameworks-cassandra"))
   .dependsOn(styxFrameworksInterfaces)
   .settings(
