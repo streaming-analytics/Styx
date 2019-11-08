@@ -339,7 +339,7 @@
                 </section>
 
                 <section>
-                    <h2>Exactly-once semantics, Fault-tolerance and checkpointing</h2>
+                    <h2>Fault-tolerance</h2>
                     <p></p>
                     <ul>
                         <li>Data is in one of three stages:</li>
@@ -364,6 +364,18 @@
                     <aside class="notes">
                         Trade-off: size of state vs speed of recovery/updates
                     </aside>
+                </section>
+
+                <section>
+                    <h2>Consistency semantics</h2>
+                    <ul>
+                        <li>By configuring offsets, state, and savepointing/checkpointing, a stream processing system can reach a level of robustness:</li>
+                        <ul>
+                            <li><b>At-least-once</b>: guarantees that each event is always processed</li>
+                            <li><b>At-most-once</b>: guarantees that an event is never processed more than once</li>
+                            <li><b>Exactly-once</b>: guarantees that an event is alyways processed once</li>
+                        </ul>
+                    </ul>
                 </section>
 
             </section>
