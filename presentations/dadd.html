@@ -45,7 +45,7 @@
             <section>
                 <h2>Streaming Analytics</h2>
                 <h3>Architecture, Patterns, Technology</h3>
-                <img src="img/dadd.png" style="height: 250px;" />
+                <img src="img/dadd.jpg" style="height: 250px;" />
                 <p>
                     <small>Bas Geerdink | November 14, 2019 | Digital Architecture Design Day </small>
                 </p>
@@ -183,24 +183,18 @@
             </section>
 
             <section>
-                <h2>The software stack</h2>
+                <h2>A possible software stack</h2>
                 <ul>
-                    <li>Data stream storage: <b>Kafka</b> (or any cloud-based version)</li>
-                    <li>Persisting cache, rules, models, and config: <b>Cassandra</b> or <b>Ignite</b></li>
-                    <li>Stream processing: <b>Spark</b>/<b>Flink</b> (or any cloud-based version)</li>
+                    <li>Data stream storage: <b>Kafka</b></li>
+                    <li>Cache: any distributed low-latency NoSQL database, e.g. <b>Cassandra</b></li>
+                    <li>Stream processing: <b>Spark</b> or <b>Flink</b></li>
                     <li>Model scoring: <b>PMML</b> and <b>Openscoring.io</b></li>
                 </ul>
                 <aside class="notes">
-                    The KISSS stack!<br>
                     Considerations: latency, throughput, connectivity/integration.<br>
                     All: scalable, mature, fault-tolerant, fast.<br>
                     Spark has caught up with Flink in terms of performance, features, users.
                 </aside>
-            </section>
-
-            <section>
-                <h2>Streaming Architecture</h2>
-                <img src="img/architecture_spark.png" class="stretch">
             </section>
 
             <section>
@@ -529,10 +523,6 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
                 </p>
             </section>
 
-        </div>
-
-        <div id="footer">
-            <img src="img/dadd_footer.png" style="width:100%; max-width:100%;">
         </div>
 
     </div> <!-- reveal -->
