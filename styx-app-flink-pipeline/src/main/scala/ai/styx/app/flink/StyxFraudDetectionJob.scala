@@ -1,28 +1,40 @@
 package ai.styx.app.flink
 
 import ai.styx.common.{Configuration, Logging}
-import ai.styx.frameworks.kafka.{KafkaFactory, KafkaStringConsumer}
+import ai.styx.domain.events.Transaction
+import ai.styx.frameworks.kafka.{KafkaFactory, KafkaStringConsumer, KafkaStringProducer}
 import org.apache.flink.api.common.typeinfo.TypeInformation
+import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
 
 object StyxFraudDetectionJob extends App with Logging {
-  implicit val typeInfoString: TypeInformation[String] = TypeInformation.of(classOf[String])
-  implicit val typeInfoUnit: TypeInformation[Unit] = TypeInformation.of(classOf[Unit])
-
+  // configuration
   implicit val config: Configuration = Configuration.load()
 
+  LOG.info("Start!")
+
+  // set up Flink
   val env = StreamExecutionEnvironment.getExecutionEnvironment
-  //env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime) // configure event-time characteristics
-  //env.getConfig.setAutoWatermarkInterval(1000) // generate a Watermark every second
-  env.setParallelism(1)
+  env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 
-  val consumer = KafkaFactory.createMessageBusConsumer(config).asInstanceOf[KafkaStringConsumer]
+  implicit val typeInfo1: TypeInformation[Transaction] = TypeInformation.of(classOf[Transaction])
+  implicit val typeInfo2: TypeInformation[Option[Transaction]] = TypeInformation.of(classOf[Option[Transaction]])
+  implicit val typeInfo3: TypeInformation[Option[String]] = TypeInformation.of(classOf[Option[String]])
+  implicit val typeInfo4: TypeInformation[String] = TypeInformation.of(classOf[String])
+  implicit val typeInfo5: TypeInformation[(String, Int)] = TypeInformation.of(classOf[(String, Int)])
 
-  val input = env.addSource(consumer)
+  val producer = KafkaFactory.createStringProducer(config.kafkaProducerProperties).asInstanceOf[KafkaStringProducer]
 
-  val s = input.map(s => s) // LOG.info(s))
+  val stream = env
+    .addSource(KafkaFactory.createMessageBusConsumer(config).asInstanceOf[KafkaStringConsumer])
 
-  s.addSink(x => LOG.info(x))
+  ///// Part 1: CEP --> check for unusual transaction counts per hour
+  stream.addSink(transaction => LOG.info(transaction))
 
-  env.execute("Styx")
+  ///// Part 2: ML --> compare the transactions to customer context
+
+  env.execute("Fraud detection")
+
+  LOG.info("Done!")
+
 }

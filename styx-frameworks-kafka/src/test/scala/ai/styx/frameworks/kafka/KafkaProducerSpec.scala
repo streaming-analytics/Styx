@@ -6,7 +6,7 @@ import ai.styx.domain.events.TestEvent
 import org.apache.kafka.clients.producer.ProducerRecord
 import org.apache.kafka.common.serialization.StringSerializer
 
-class KafkaProducerSpec extends BaseSpec with EmbeddedKafka {
+class KafkaProducerSpec extends BaseSpec with LocalKafka {
 
   lazy val config: Configuration = Configuration.load()
 

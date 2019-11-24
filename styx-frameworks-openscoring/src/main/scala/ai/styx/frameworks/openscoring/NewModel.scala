@@ -4,14 +4,12 @@ import java.util
 
 import ai.styx.common.Logging
 import ai.styx.domain.Customer
-import ai.styx.domain.models.ModelInstance
 import org.dmg.pmml.{DataField, FieldName, Model}
 import org.jpmml.evaluator._
 
 import scala.collection.JavaConverters._
 
-class PmmlModelInstance(pmmlModel: ModelEvaluator[_ <: Model]) extends ModelInstance with Logging {
-
+class NewModel(pmmlModel: ModelEvaluator[_ <: Model]) extends Logging {
   def score(customer: Customer): Double = {
 
     val arguments = new util.LinkedHashMap[FieldName, FieldValue]
@@ -47,14 +45,15 @@ class PmmlModelInstance(pmmlModel: ModelEvaluator[_ <: Model]) extends ModelInst
           case "integer" => arguments.put(fieldName, inputField.prepare(0))
         }
       case "categorical" | "ordinal" =>
-//        val validArgumentValues = FieldValueUtil.getValidValues(pmmlDataField)
-//        validArgumentValues.asScala.headOption match {
-//          case None => LOG.error("No valid argument value available")
-//          case Some(value) =>
+        // TODO: inputField.getDiscreteDomain ??
+        //val validArgumentValues = FieldValueUtil.getValidValues(pmmlDataField)
+        //validArgumentValues.asScala.headOption match {
+        //  case None => LOG.error("No valid argument value available")
+         // case Some(value) =>
             inputField.getDataType.value match {
-              case "string" => arguments.put(fieldName, inputField.prepare("value"))
+              case "string" => arguments.put(fieldName, inputField.prepare(""))
               case "integer" => arguments.put(fieldName, inputField.prepare(0))
-          //  }
+         //   }
         }
     }
   }
@@ -87,4 +86,5 @@ class PmmlModelInstance(pmmlModel: ModelEvaluator[_ <: Model]) extends ModelInst
 //    stream.flush()
 //    PmmlModel(UUID.randomUUID().toString, stream.toString)
 //  }
+
 }

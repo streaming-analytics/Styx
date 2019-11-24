@@ -13,6 +13,8 @@ object StyxShoppingJob extends App with Logging {
 
     LOG.info("Starting Flink job...")
 
+    implicit val info = TypeInformation.of(BasePatternEvent.getClass)
+
     implicit val config: Configuration = Configuration.load()
 
     val env = StreamExecutionEnvironment.getExecutionEnvironment

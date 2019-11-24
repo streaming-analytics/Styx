@@ -3,7 +3,7 @@ package ai.styx.frameworks.kafka
 import ai.styx.common.{BaseSpec, Configuration}
 import org.apache.kafka.common.serialization.StringSerializer
 
-class KafkaConsumerSpec extends BaseSpec with EmbeddedKafka {
+class KafkaConsumerSpec extends BaseSpec with LocalKafka {
 
   val parallelism = 4
 

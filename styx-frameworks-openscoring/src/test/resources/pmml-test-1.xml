@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<PMML xmlns="http://www.dmg.org/PMML-4_2" version="">
+    <Header></Header>
+    <DataDictionary>
+        <DataField name="test1" optype="categorical" dataType="integer"></DataField>
+    </DataDictionary>
+</PMML>
