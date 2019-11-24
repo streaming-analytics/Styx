@@ -1,7 +1,7 @@
 package ai.styx.app.flink
 
 import ai.styx.common.{Configuration, Logging}
-import ai.styx.domain.events.BaseTransactionEvent
+import ai.styx.domain.events.{BasePatternEvent, BaseTransactionEvent}
 import ai.styx.frameworks.kafka.{KafkaFactory, KafkaStringConsumer}
 import ai.styx.usecases.shopping.CepFunction
 import org.apache.flink.api.common.typeinfo.TypeInformation
