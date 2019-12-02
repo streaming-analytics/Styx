@@ -192,14 +192,21 @@ lazy val styxUseCasesTwitterSentiment = (project in file("styx-usecases-twitter-
     name := "styx-usecases-twitter-sentiment"
   )
 
+lazy val styxUseCasesFraud = (project in file("styx-usecases-fraud"))
+  .dependsOn(styxUseCasesInterfaces, styxFrameworksFlink)
+  .settings(
+    commonSettings,
+    name := "styx-usecases-fraud"
+  )
+
 lazy val styxAppFlinkPipeline = (project in file("styx-app-flink-pipeline"))
-  .dependsOn(styxUseCasesShopping, styxUseCasesClickStream, styxUseCasesTwitterSentiment, styxFrameworksFlink, styxFrameworksKafka)
+  .dependsOn(styxUseCasesShopping, styxUseCasesClickStream, styxUseCasesTwitterSentiment, styxUseCasesFraud, styxFrameworksKafka)
   .settings(
     commonSettings,
     name := "styx-app-flink-pipeline")
 
 lazy val styxAppSparkPipeline = (project in file("styx-app-spark-pipeline"))
-  .dependsOn(styxUseCasesShopping, styxUseCasesClickStream, styxUseCasesTwitterSentiment, styxFrameworksSpark, styxFrameworksKafka, styxFrameworksIgnite)
+  .dependsOn(styxUseCasesShopping, styxUseCasesClickStream, styxUseCasesTwitterSentiment, styxUseCasesFraud, styxFrameworksSpark, styxFrameworksKafka, styxFrameworksIgnite)
   .settings(
     commonSettings,
     name := "styx-app-spark-pipeline")
@@ -219,6 +226,7 @@ lazy val root = (project in file("."))
     styxUseCasesShopping,
     styxUseCasesTwitterSentiment,
     styxUseCasesClickStream,
+    styxUseCasesFraud,
     styxFrameworksCassandra,
     styxFrameworksIgnite,
     styxFrameworksFlink,

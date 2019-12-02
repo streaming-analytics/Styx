@@ -2,13 +2,14 @@ package ai.styx.usecases.clickstream
 
 import java.util.Locale
 
+import ai.styx.common.Logging
 import ai.styx.domain.events.Click
 import org.apache.flink.streaming.api.functions.AssignerWithPeriodicWatermarks
 import org.apache.flink.streaming.api.watermark.Watermark
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 
-class ClickTimestampAndWatermarkGenerator extends AssignerWithPeriodicWatermarks[Click] {
+class ClickTimestampAndWatermarkGenerator extends AssignerWithPeriodicWatermarks[Click] with Logging {
 
   val maxOutOfOrderness = 100L // 0.1 seconds
   var currentMaxTimestamp: Long = 0L
@@ -21,7 +22,9 @@ class ClickTimestampAndWatermarkGenerator extends AssignerWithPeriodicWatermarks
       timestamp
     }
     catch {
-      case _: Throwable => 0L
+      case t: Throwable =>
+        LOG.error("Unable to extract event timestamp from click", t)
+        0L
     }
   }
 
