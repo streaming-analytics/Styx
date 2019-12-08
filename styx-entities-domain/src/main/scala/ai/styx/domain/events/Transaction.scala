@@ -37,7 +37,11 @@ case class Transaction(
 
                         @BeanProperty
                         @JsonProperty("customer_id")
-                        customerId: String = null
+                        customerId: String = null,
+
+                        @BeanProperty
+                        @JsonProperty("counter_account")
+                        counterAccount: String = null
                       ) {
   def created: Option[DateTime] = {
     try {

@@ -22,7 +22,7 @@ object KafkaTransactionsGenerator extends App with Logging {
     val amount = Random.nextDouble() * Random.nextInt(1000)  // TODO: add negatives
     val counterAccount = "Customer-" + Random.nextInt(10).toString
 
-    val t = Transaction(now, customerId, amount, "PAYMENT", "EURO", counterAccount, "test transactions").toJson()
+    val t = Transaction(now, "description", amount, "EURO", "somewhere", customerId, counterAccount).toJson()
     producer.send(topic, t)
 
     Thread.sleep(10)  // 100 per second

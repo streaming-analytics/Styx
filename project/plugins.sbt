@@ -1,7 +1,7 @@
 resolvers += "Typesafe Releases" at "https://repo.typesafe.com/typesafe/releases/"
 resolvers += "Typesafe Simple Repository" at "http://repo.typesafe.com/typesafe/simple/maven-releases/"
 resolvers += Resolver.bintrayRepo("hseeberger", "maven")
-resolvers ++= Seq("snapshots", "releases").map(Resolver.sonatypeRepo)
+// resolvers ++= Seq("snapshots", "releases").map(Resolver.sonatypeRepo)
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.5")
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0")

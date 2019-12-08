@@ -16,7 +16,10 @@ class TransactionSpec extends BaseSpec {
       Timestamp.from(i),
       "This is a test transaction",
       21.45,
-    "EURO")
+      "EURO",
+      "Utrecht",
+      "C_12345",
+      "NL73 RABO 930291093")
     val json = transaction.toJson()
     LOG.info(json)
     assert(json.contains("This is a test transaction"))

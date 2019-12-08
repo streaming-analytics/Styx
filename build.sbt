@@ -20,12 +20,13 @@ val embeddedKafkaV = "1.0.0"
 val codehaleMetricsV = "3.0.2"
 val jpmmlV = "1.4.11"
 val igniteV = "2.7.6"
+val ow2V = "5.0.3"
 
 lazy val commonSettings = Seq(
   organization := "github.com/streaming-analytics",
   version := "0.1",
   scalaVersion := "2.12.7",
-  sbtVersion := "1.2.8",
+  sbtVersion := "1.3.4",
   crossPaths := false,
   scalacOptions := Seq(
     "-encoding", "utf8",
@@ -90,10 +91,11 @@ lazy val kafkaDependencies = Seq(
   "org.apache.spark" %% ("spark-sql-kafka-" + sparkKafkaV) % sparkV exclude("log4j", "*") exclude("org.slf4j", "slf4j-log4j12")
 )
 
+
 lazy val overrideDependencies = Set(
   "joda-time" % "joda-time" % jodatimeV,
-  "org.ow2.asm" % "asm-tree" % "5.0.3",
-  "org.ow2.asm" % "asm-commons" % "5.0.3",
+   "org.ow2.asm" % "asm-tree" % ow2V,
+   "org.ow2.asm" % "asm-commons" % ow2V,
   "org.slf4j" % "slf4j-api" % slf4jV,
   "org.slf4j" % "log4j-over-slf4j" % slf4jV,
   "org.slf4j" % "jcl-over-slf5j" % slf4jV,
