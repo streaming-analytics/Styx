@@ -192,10 +192,6 @@
                 <!--                        <li>http://spark.apache.org/docs/latest/configuration.html</li>-->
             </ul>
 
-            <!--                    <pre><code data-trim>-->
-            <!--                    spark.executor.cores=2, spark.task.cpus=1-->
-            <!--                    </code></pre>-->
-
             <pre><code data-trim>
   val conf = new SparkConf()
     .setMaster("local[8]")
@@ -252,12 +248,6 @@
         </section>
 
         <section>
-            <h2>Out-of-orderness</h2>
-            <img src="img/EventTime_StarWars.png" class="stretch"/><br>
-            <img src="img/Star_Wars_logo.png" style="width:200px;"/>
-        </section>
-
-        <section>
             <h2>Windows</h2>
             <ul>
                 <li>In processing infinite streams, we usually look at a time <i>window</i></li>
@@ -283,22 +273,6 @@
         <section>
             <h2>Windows</h2>
             <img src="img/Windows.png" class="stretch"/>
-        </section>
-
-        <section>
-            <h2>Window considerations</h2>
-            <ul>
-                <li><b>Size</b>: large windows lead to big state and long calculations</li>
-                <li><b>Number</b>: many windows (e.g. sliding, session) lead to more calculations</li>
-                <li><b>Evaluation</b>: do all calculations within one window, or keep a cache across multiple windows
-                    (e.g. when comparing windows, like in trend analysis)
-                </li>
-                <li><b>Timing</b>: events for a window can appear <i>early</i> or <i>late</i></li>
-            </ul>
-            <aside class="notes">
-                <p>Fraud detection: sliding window of 1 day</p>
-                <p>Actionable insights: tumbling window of 1 hour</p>
-            </aside>
         </section>
 
         <section>
@@ -350,36 +324,6 @@
         </section>
 
         <section>
-            <h2>Fault-tolerance and checkpointing</h2>
-            <p></p>
-            <ul>
-                <li>Data is in one of three stages:</li>
-                <ul>
-                    <li><b>Unprocessed</b> <span class="fragment fade-in" data-fragment-index="1">
-                            &rAarr; Kafka consumers provide <i>offsets</i> that guarantee no data loss for unprocessed data</span>
-                    </li>
-                    <li><b>In transit</b> <span class="fragment fade-in" data-fragment-index="1">
-                            &rAarr; data can be preserved in a <i>checkpoint</i>, to reload and replay it after a crash</span>
-                    </li>
-                    <li><b>Processed</b> <span class="fragment fade-in" data-fragment-index="1">
-                            &rAarr; Kafka provides an acknowledgement once data is written</span></li>
-                </ul>
-            </ul>
-        </section>
-
-        <section>
-            <h2>Sink the output to Kafka</h2>
-            <pre><code data-trim>
- businessEvents
-    .format("kafka")
-    .option("kafka.bootstrap.servers", "localhost:9092")
-    .option("topic", "business_events")
-    .option("checkpointLocation", "/hdfs/checkpoint")
-    .start()  // this triggers the start of the streaming query
-                    </code></pre>
-        </section>
-
-        <section>
             <h2>Model scoring</h2>
             <ul>
                 <li>To determine the follow-up action of a aggregated business event (e.g. pattern), we have to enrich
@@ -418,23 +362,6 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
         <section>
             <h2>PMML</h2>
             <img src="img/PMML.png" class="stretch"/>
-        </section>
-
-        <section>
-            <h2>Model scoring</h2>
-            <ul>
-                <li>The models can be loaded into memory to enable split-second performance</li>
-                <li>By applying <i>map</i> functions over the events we can process/transform the
-                    data in the windows:
-                </li>
-                <ol>
-                    <li>enrich each business event by getting more data</li>
-                    <li>filtering events based on selection criteria (rules)</li>
-                    <li>score a machine learning model on each event</li>
-                    <li>write the outcome to a new event / output stream</li>
-                </ol>
-                </li>
-            </ul>
         </section>
 
         <section>
