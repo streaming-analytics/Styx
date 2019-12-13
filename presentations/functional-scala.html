@@ -163,27 +163,6 @@
         </section>
 
         <section>
-            <h2>Streaming Architecture</h2>
-            <img src="img/architecture_spark.png" class="stretch">
-        </section>
-
-        <section>
-            <h2>Spark-Kafka integration</h2>
-            <ul>
-                <li>A Fast Data application is a running <i>job</i> that processes events in a data store (Kafka)</li>
-                <li>Jobs can be deployed as ever-running pieces of software in a big data cluster (Spark)</li>
-                <li class="fragment" data-fragment-index="1">The basic pattern of a job is:
-                    <ul class="fragment" data-fragment-index="1">
-                        <li>Connect to the stream and consume events</li>
-                        <li>Group and gather events (windowing)</li>
-                        <li>Perform analysis (aggregation) on each window</li>
-                        <li>Write the result to another stream (sink)</li>
-                    </ul>
-                </li>
-            </ul>
-        </section>
-
-        <section>
             <h2>Parallelism</h2>
             <ul>
                 <li>To get high throughput, we have to process the events in parallel</li>
@@ -206,7 +185,23 @@
         </section>
 
         <section>
-            <h2>Hello speed!</h2>
+            <h2>Spark-Kafka integration</h2>
+            <ul>
+                <li>A Fast Data application is a running <i>job</i> that processes events in a data store (Kafka)</li>
+                <li>Jobs can be deployed as ever-running pieces of software in a big data cluster (Spark)</li>
+                <li class="fragment" data-fragment-index="1">The basic pattern of a job is:
+                    <ul class="fragment" data-fragment-index="1">
+                        <li>Connect to the stream and consume events</li>
+                        <li>Group and gather events (windowing)</li>
+                        <li>Perform analysis (aggregation) on each window</li>
+                        <li>Write the result to another stream (sink)</li>
+                    </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Connect to Spark and Kafka</h2>
             <!-- Simplified code: serializing data and making a DataStream of 'raw' Kafka events -->
             <pre><code data-trim>
   // connect to Spark
@@ -227,6 +222,27 @@
     .option("startingOffsets", "latest")
     .load()
                 </code></pre>
+        </section>
+
+        <section>
+            <h2>Data Preparation</h2>
+            <pre><code data-trim>
+  // split up a tweet in separate words
+  val tweetStream = df
+    .map(_.getString(1)) // get value
+    .map(Tweet.fromString)
+    .filter(_.isDefined).map(_.get)
+
+    // create multiple TweetWord objects from 1 tweet
+    .flatMap(tweet => {
+      val words = tweet.text
+        .toLowerCase()
+        .split("[ \\t]+")  // get words from tweet
+      words.map(word => TweetWord(tweet.created_at, word))
+    })
+    .filter(tw => !wordsToIgnore.contains(tw.word)
+                && tw.word.length >= minimumWordLength)
+            </code></pre>
         </section>
 
         <section>
@@ -277,15 +293,18 @@
 
         <section>
             <h2>Windows</h2>
-            <p>Example: sliding window of 1 day, evaluated every 15 minutes over the field 'customer_id'.
-                The event time is stored in the field 'transaction_time'</p>
+            <p>
+                Example: sliding window of 1 hour, evaluated every 15 minutes.
+                The event time is stored in the field 'created_at'.
+                Aggregation is done by counting the words per group, per window.
+            </p>
             <pre><code data-trim>
   // aggregate, produces a sql.DataFrame
-  val windowedTransactions = transactionStream
+  val windowedTransactions = tweetStream
     .groupBy(
-      window($"transaction_time", "1 day", "15 minutes"),
-      $"customer_id")
-    .agg(count("t_id") as "count", $"customer_id", $"window.end")
+      window($"created_at", "1 hour", "15 minutes"),
+      $"word")
+    .agg(count("word") as "count", $"word", $"window.end")
                     </code></pre>
 
             <aside class="notes">
@@ -311,12 +330,13 @@
             <p>Example: sliding window of 60 seconds, evaluated every 30 seconds.
                 The watermark is set at 1 second, giving all events some time to arrive.</p>
             <pre><code data-trim>
-  val windowedTransactions = transactionStream
-    .withWatermark("created_at", "1 second")
+  // aggregate, produces a sql.DataFrame
+  val windowedTransactions = tweetStream
+    .withWatermark("created_at", "1 minute")   // <--- watermark
     .groupBy(
-      window($"transaction_time", "60 seconds", "30 seconds"),
-      $"customer_id")
-    .agg(...)  // e.g. count/sum/...
+      window($"created_at", "1 hour", "15 minutes"),
+      $"word")
+    .agg(count("word") as "count", $"word", $"window.end")
                     </code></pre>
             <aside class="notes">
                 Kafka is a replayable data source. The checkpoint is made in a write-ahead log.

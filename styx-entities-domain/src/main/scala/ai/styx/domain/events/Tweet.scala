@@ -44,15 +44,15 @@ object Tweet extends Logging {
 
   def objectMapper = mapper
 
-  def fromString(s: String): Tweet = {
+  def fromString(s: String): Option[Tweet] = {
     try {
       val tweet = mapper.readValue(s, classOf[Tweet]) // .replaceAll("[$\\[\\]{}]", "")
-      if (tweet == null || tweet.text == null || tweet.created_at == null) null else tweet
+      if (tweet == null || tweet.text == null || tweet.created_at == null) None else Some(tweet)
     }
     catch {
       case t: Throwable =>
         LOG.error(s"Unable to parse tweet from string $s", t)
-        null
+        None
     }
   }
 

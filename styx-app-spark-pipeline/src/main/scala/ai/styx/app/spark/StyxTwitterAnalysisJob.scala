@@ -50,16 +50,11 @@ object StyxTwitterAnalysisJob extends App with Logging {
   val dbWriter: DatabaseWriter = dbFactory.createWriter
   val dbFetcher: DatabaseFetcher = dbFactory.createFetcher
 
-  //createTables(dbWriter)
-
-  ///// part 1a CEP: count the words per period /////
-
+  // split up a tweet in separate words
   val tweetStream = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as("kv") // get key/value pair from Kafka
-    .map(kv => kv.getString(1)) // get string value
-    .map(json => {
-      Tweet.fromString(json)
-    }) // convert to domain class Tweet
-    .filter(_ != null)
+    .map(_.getString(1)) // get string value
+    .map(Tweet.fromString) // convert to domain class Tweet
+    .filter(_.isDefined).map(_.get)
 
     // create multiple TweetWord objects from 1 Tweet object. Keep the Timestamp, but split the text in words
     .flatMap(tweet => {
@@ -116,14 +111,6 @@ object StyxTwitterAnalysisJob extends App with Logging {
 
   val trends = windowedTweets
 
-//  val igniteSink = windowedTweets
-//    .map(t => {
-//      dbWriter.putDomainEntity("top_tweets", t)
-//      t
-//    })
-
-  // compare the first half of the window by the second one; we can do this by looking at the event time
-
   val trendsOutput = trends
     .writeStream
     .format("console")
@@ -131,32 +118,6 @@ object StyxTwitterAnalysisJob extends App with Logging {
     .start()
 
   trendsOutput.awaitTermination()
-
-  // delete older windows from cache
-
-  // Have all the aggregates in an in-memory table
-  //  aggDF
-  //    .writeStream
-  //    .queryName("aggregates")    // this query name will be the table name
-  //    .outputMode("complete")
-  //    .format("memory")
-  //    .start()
-  //
-
-  ///// part 1b CEP: look at 2 periods (e.g. hours) and calculate slope, find top 5 /////
-
-  ///// #2: ML, get notification /////
-
-  ///// #3: Notification /////
-
-  // sink the data to Kafka
-  //  val ds = df
-  //    .selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)")
-  //    .writeStream
-  //    .format("kafka")
-  //    .option("kafka.bootstrap.servers", "host1:port1,host2:port2")
-  //    .option("topic", "topic1")
-  //    .start()
 
   def createTables(dbWriter: DatabaseWriter) = {
     dbWriter.deleteTable("top_tweets")
