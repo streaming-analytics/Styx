@@ -54,7 +54,7 @@ object StyxTwitterAnalysisJob extends App with Logging {
   val tweetStream = df.selectExpr("CAST(key AS STRING)", "CAST(value AS STRING)").as("kv") // get key/value pair from Kafka
     .map(_.getString(1)) // get string value
     .map(Tweet.fromString) // convert to domain class Tweet
-    .filter(_.isDefined).map(_.get)
+    .filter(_ != null)
 
     // create multiple TweetWord objects from 1 Tweet object. Keep the Timestamp, but split the text in words
     .flatMap(tweet => {
