@@ -47,7 +47,7 @@
                 <h3>Concepts, Architecture, Technology</h3>
                 <img src="img/bdw.png" style="height: 250px;" />
                 <p>
-                    <small>Bas Geerdink | March 11, 20220 | Big Data & AI World </small>
+                    <small>Bas Geerdink | March 11, 2020 | Big Data & AI World </small>
                 </p>
                 <aside class="notes">
                         Streaming analytics (or fast data) is becoming an increasingly popular subject in enterprise organizations because customers want to have real-time experiences, such as notifications and advice based on their online behavior and other users’ actions. A typical streaming analytics solution follows a “pipes and filters” pattern that consists of three main steps: detecting patterns on raw event data (complex event processing), evaluating the outcomes with the aid of business rules and machine learning algorithms, and deciding on the next action.
@@ -69,12 +69,12 @@
                                  "Informatics"],
                   "mixins": ["Software engineering",
                              "Architecture",
-                             "Management",
                              "Innovation"],
                   "twitter": "@bgeerdink",
                   "linked_in": "bgeerdink"
                 }
-            </code></pre>
+                </code></pre>
+                <img src="img/Aizonic.png" style="width:150px;">
             </section>
 
             <section>
@@ -147,12 +147,12 @@
 
             <section>
                 <h2>Fast Data Pattern</h2>
-                The common pattern in all these scenarios:
+                <p align="left">There is a common pattern in all these scenarios:</p>
                 <ol>
                     <li>Prepare raw data:</li>
                     <ul>
-                        <li>Process each event <i>separately</i></li>
-                        <li>Detect pattern by <i>combining</i> event data (CEP)</li>
+                        <li>Process each event <i>separately</i>; or</li>
+                        <li>Detect pattern by <i>combining</i> events (CEP)</li>
                     </ul>
                     <li>Determine relevancy (ML)</li>
                     <li>Produce follow-up action</li>
@@ -187,16 +187,21 @@
             </section>
 
             <section>
+                <h2>Architecture</h2>
+                <img src="img/architecture_spark_flink.png" class="stretch">
+            </section>
+
+            <section>
                 <h2>Fast Data applications</h2>
                 <ul>
                     <li>A Fast Data application is a running <i>job</i> that processes events in a data store (Kafka)</li>
                     <li>Jobs can be deployed as ever-running pieces of software in a big data cluster (Spark, Flink, ...)</li>
                     <li class="fragment" data-fragment-index="1">The basic pattern of a job is:
                         <ul class="fragment" data-fragment-index="1">
-                            <li>Connect to the stream and consume events</li>
-                            <li>Group and gather events (windowing)</li>
-                            <li>Perform analysis (aggregation) on each window</li>
-                            <li>Write the result to another stream (sink)</li>
+                            <li>Connect to the stream and consume events (<i>ingestion</i>)</li>
+                            <li>If needed, group the events (<i>windowing</i>)</li>
+                            <li>Process each event or window (<i>aggregation</i>)</li>
+                            <li>Write the results to a data store or stream (<i>sink</i>)</li>
                         </ul>
                     </li>
                 </ul>
@@ -232,7 +237,7 @@ val conf = new SparkConf()
                     <li>... and are processed later <span class="fragment fade-in" data-fragment-index="1">
                             <b>&rAarr; processing time</b></span></li>
                 </ul>
-                <img src="img/EventTime.png" class="fragment" data-fragment-index="2" />
+                <img src="img/EventTime.png" class="fragment" style="max-width: 80%;" data-fragment-index="2" />
 
                 <aside class="notes">
                     Events can reach us <i>out-of-order</i>;
@@ -255,7 +260,7 @@ val conf = new SparkConf()
                         <ul class="fragment" data-fragment-index="1">
                             <li>Sliding window</li> <!-- e.g. looking back at the last hour, continuous updating average of system activity -->
                             <li>Tumbling window</li> <!-- e.g. processing data per day to get a financial report -->
-                            <li><i>Session window</i></li> <!-- based on event data, e.g. users logged in and out. Not in Spark! -->
+                            <li>Session window</li> <!-- based on event data, e.g. users logged in and out. Not in Spark! -->
                         </ul>
                     </li>
                     <aside class="notes">
@@ -290,35 +295,35 @@ val conf = new SparkConf()
                 <ul>
                     <li><i>Watermarks</i> are timestamps that trigger the computation of the window</li>
                     <li>They are generated at a time that allows a bit of slack for <i>late events</i></li>
-                    <li class="fragment" data-fragment-index="1">Any event that reaches the processor later
-                        than the watermark, but with an event time that should belong to the former window, is <i>ignored</i></li>
-                    <li class="fragment" data-fragment-index="2">In Flink, it's possible to allow late events to trigger re-computation
-                        of a window by setting the <i>allowedLateness</i> property</li>
+<!--                    <li class="fragment" data-fragment-index="1">Any event that reaches the processor later-->
+<!--                        than the watermark, but with an event time that should belong to the former window, is <i>ignored</i></li>-->
+<!--                    <li class="fragment" data-fragment-index="2">In Flink, it's possible to allow late events to trigger re-computation-->
+<!--                        of a window by setting the <i>allowedLateness</i> property</li>-->
                 </ul>
             </section>
 
-            <section>
-                <h2>Consistency semantics</h2>
-                <ul>
-                    <li>By configuring offsets, state, and savepointing/checkpointing, a stream processing system can reach a level of robustness:</li>
-                    <ul>
-                        <li><b>At-least-once</b>: guarantees that each event is always processed</li>
-                        <li><b>At-most-once</b>: guarantees that an event is never processed more than once</li>
-                        <li><b>Exactly-once</b>: guarantees that an event is alyways processed once</li>
-                    </ul>
-                </ul>
-            </section>
+<!--            <section>-->
+<!--                <h2>Consistency semantics</h2>-->
+<!--                <ul>-->
+<!--                    <li>By configuring offsets, state, and savepointing/checkpointing, a stream processing system can reach a level of robustness:</li>-->
+<!--                    <ul>-->
+<!--                        <li><b>At-least-once</b>: guarantees that each event is always processed</li>-->
+<!--                        <li><b>At-most-once</b>: guarantees that an event is never processed more than once</li>-->
+<!--                        <li><b>Exactly-once</b>: guarantees that an event is alyways processed once</li>-->
+<!--                    </ul>-->
+<!--                </ul>-->
+<!--            </section>-->
 
             <section>
                 <h2>Model scoring</h2>
                 <ul>
                     <li>To determine the follow-up action of a aggregated business event (e.g. pattern), we have to enrich the event with customer data</li>
                     <li>The resulting data object contains the characteristics (features) as input for a model</li>
-                    <li class="fragment" data-fragment-index="1">To get the features and score the model, efficiency plays a role again:</li>
-                    <ul class="fragment" data-fragment-index="1">
-                        <li>Direct database call > API call</li>
-                        <li>In-memory model cache > model on disk</li>
-                    </ul>
+<!--                    <li class="fragment" data-fragment-index="1">To get the features and score the model, efficiency plays a role again:</li>-->
+<!--                    <ul class="fragment" data-fragment-index="1">-->
+<!--                        <li>Direct database call > API call</li>-->
+<!--                        <li>In-memory model cache > model on disk</li>-->
+<!--                    </ul>-->
                 </ul>
             </section>
 
@@ -346,21 +351,21 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
                 <img src="img/PMML.png" class="stretch" />
             </section>
 
-            <section>
-                <h2>Model scoring</h2>
-                <ul>
-                    <li>The models can be loaded into memory to enable split-second performance</li>
-                    <li>By applying <i>map</i> functions over the events we can process/transform the
-                        data in the windows:</li>
-                        <ol>
-                            <li>enrich each business event by getting more data</li>
-                            <li>filtering events based on selection criteria (rules)</li>
-                            <li>score a machine learning model on each event</li>
-                            <li>write the outcome to a new event / output stream</li>
-                        </ol>
-                    </li>
-                </ul>
-            </section>
+<!--            <section>-->
+<!--                <h2>Model scoring</h2>-->
+<!--                <ul>-->
+<!--                    <li>The models can be loaded into memory to enable split-second performance</li>-->
+<!--                    <li>By applying <i>map</i> functions over the events we can process/transform the-->
+<!--                        data in the windows:</li>-->
+<!--                        <ol>-->
+<!--                            <li>enrich each business event by getting more data</li>-->
+<!--                            <li>filtering events based on selection criteria (rules)</li>-->
+<!--                            <li>score a machine learning model on each event</li>-->
+<!--                            <li>write the outcome to a new event / output stream</li>-->
+<!--                        </ol>-->
+<!--                    </li>-->
+<!--                </ul>-->
+<!--            </section>-->
 
             <section>
                 <h2>Alternative stacks</h2>
@@ -412,19 +417,22 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
 
             <section>
                 <h2>Thanks!</h2>
-                <p>Please rate my session on the website or app :)</p>
-                <p>Read more about streaming analytics at:</p>
-                <ul>
-                    <li><a href="https://www.oreilly.com/ideas/the-world-beyond-batch-streaming-101">The world beyond batch:
-                            Streaming 101</a></li>
-                    <li><a href="https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/43864.pdf">Google
+                <small>
+                    <p>Read more about streaming analytics at:</p>
+                    <ul>
+                        <li><a href="https://static.googleusercontent.com/media/research.google.com/en//pubs/archive/43864.pdf">Google
                             Dataflow paper</a></li>
-                    <li><a href="https://online-learning.tudelft.nl/courses/taming-big-data-streams-real-time-data-processing-at-scale/">Real-time Data Processing at Scale (TU Delft)</a></li>
-                </ul>
-                <p>Source code and presentation are available on Github:</p>
-                <p>
-                    <a href="https://github.com/streaming-analytics/Styx">https://github.com/streaming-analytics/Styx</a>
-                </p>
+                        <li><a href="https://www.oreilly.com/ideas/the-world-beyond-batch-streaming-101">The world beyond batch:
+                                Streaming 101</a></li>
+                        <li><a href="https://online-learning.tudelft.nl/courses/taming-big-data-streams-real-time-data-processing-at-scale/">Real-time Data Processing at Scale (TU Delft)</a></li>
+                    </ul>
+                    <p>Source code and presentation are available on Github:</p>
+                    <p>
+                        <a href="https://github.com/streaming-analytics/Styx">https://github.com/streaming-analytics/Styx</a>
+                    </p>
+                    <p>Please connect at <a href="https://aizonic.com">Aizonic.com</a>, <a href="https://nl.linkedin.com/in/geerdink">LinkedIn</a> or <a href="https://twitter.com/bgeerdink">Twitter</a></p>
+                </small>
+                <a href="https://aizonic.com"><img src="img/Aizonic.png" style="width: 200px;"></a>
             </section>
 
         </div>
