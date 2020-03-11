@@ -154,7 +154,11 @@
                         <li>Process each event <i>separately</i>; or</li>
                         <li>Detect pattern by <i>combining</i> events (CEP)</li>
                     </ul>
-                    <li>Determine relevancy (ML)</li>
+                    <li>Transform the data:</li>
+                    <ul>
+                        <li>Process each event / combination; and/or    </li>
+                        <li>Determine relevancy (ML)</li>
+                    </ul>
                     <li>Produce follow-up action</li>
                 </ol>
                 <aside class="notes">
@@ -175,7 +179,7 @@
                 <h2>A possible software stack</h2>
                 <ul>
                     <li>Data stream storage: <b>Kafka</b></li>
-                    <li>Cache: any distributed low-latency NoSQL database, e.g. <b>Cassandra</b></li>
+                    <li>Cache: NoSQL database, e.g. <b>Cassandra</b> or <b>Ignite</b></li>
                     <li>Stream processing: <b>Spark</b> or <b>Flink</b></li>
                     <li>Model scoring: <b>PMML</b> and <b>Openscoring.io</b></li>
                 </ul>
@@ -408,10 +412,10 @@ sklearn2pmml(pipeline, "LogisticRegression.pmml", with_repr = True)
             <section>
                 <h2>Wrap-up</h2>
                 <ul>
-                    <li>Fraud detection and actionable insights are examples of streaming analytics use cases in financial services</li>
+                    <li>Stream processing is a form of big data that is becoming increasingly popular</li>
                     <li>The common pattern is: CEP &rarr; ML &rarr; Notification</li>
-                    <li>Pick the right tools for the job; Kafka, Ignite, and Spark are amongst the best</li>
-                    <li>Be aware of typical streaming data issues: late events, state management, windows, etc.</li>
+                    <li>Pick the right tools for the job; Kafka, Flink, and Cassandra are amongst the best</li>
+                    <li>Be aware of typical <i>fast data</i> issues: late events, state management, windows, etc.</li>
                 </ul>
             </section>
 
