@@ -31,7 +31,7 @@ object StyxFraudDetectionJob extends App with Logging {
 
   ///// Part 1: CEP --> check for unusual transaction counts per hour
   val businessEventsStream = rawEventsStream
-    .map(Transaction.fromString)
+    .map(s => Transaction.fromString(s))
     .assignTimestampsAndWatermarks(new TransactionTimestampAndWatermarkGenerator())
     //.keyBy(t => t.customerId)  // group by customer
     //.countWindowAll(1000L)  // count the transactions per second

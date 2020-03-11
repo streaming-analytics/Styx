@@ -3,7 +3,7 @@ package ai.styx.frameworks.openscoring
 import java.util
 
 import ai.styx.common.Logging
-import ai.styx.domain.Customer
+import ai.styx.domain.{Customer, PmmlModel}
 import ai.styx.domain.models.ModelInstance
 import org.dmg.pmml.{DataField, FieldName, Model}
 import org.jpmml.evaluator._
@@ -87,4 +87,5 @@ class PmmlModelInstance(pmmlModel: ModelEvaluator[_ <: Model]) extends ModelInst
 //    stream.flush()
 //    PmmlModel(UUID.randomUUID().toString, stream.toString)
 //  }
+  override def toPmml: PmmlModel = ???  // TODO
 }
