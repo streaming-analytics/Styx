@@ -3,6 +3,8 @@ package ai.styx.frameworks.cassandra
 import ai.styx.domain.DomainEntity
 import ai.styx.domain.utils.{Column, ColumnType}
 import ai.styx.frameworks.interfaces.DatabaseWriter
+import com.datastax.oss.driver.api.core.CqlSession
+import com.datastax.oss.driver.api.core.session.Session
 import org.joda.time.DateTime
 
 import scala.util.{Failure, Success, Try}
@@ -11,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 class Writer(node: String, port: Int, keyspace: String, tablePrefix: String) extends DatabaseWriter {
   val connector = new CassandraConnector()
   connector.connect(node, Some(port), keyspace)
-  val session = connector.getSession
+  val session: CqlSession = connector.getSession
 
   override def clearTable(tableName: String, indexColumns: Option[List[Column]] = None, columns: Option[List[Column]] = None): Unit = {
     deleteTable(tableName)
@@ -47,7 +49,7 @@ class Writer(node: String, port: Int, keyspace: String, tablePrefix: String) ext
     val query: String = s"CREATE TABLE IF NOT EXISTS $tableNameWithPrefix (id TEXT PRIMARY KEY $c)"
 
     LOG.info(s"Creating table $tableNameWithPrefix...")
-    session.execute(query)
+    session.execute( query)
 
     if (indexColumns.isDefined) {
       indexColumns.get.foreach {indexColumn =>

@@ -1,7 +1,8 @@
 package ai.styx.frameworks.cassandra
 
 import ai.styx.frameworks.interfaces.DatabaseFetcher
-import com.datastax.driver.core.Row
+import com.datastax.oss.driver.api.core.cql.Row
+// import com.datastax.driver.core.Row
 import org.joda.time.DateTime
 
 import scala.collection.mutable.ListBuffer
@@ -70,7 +71,7 @@ class Fetcher(node: String, port: Int, keyspace: String, tablePrefix: String) ex
 
       val rows = result.all().iterator()
 
-      var items: ListBuffer[Map[String, AnyRef]] = scala.collection.mutable.ListBuffer[Map[String, AnyRef]]()
+      val items: ListBuffer[Map[String, AnyRef]] = scala.collection.mutable.ListBuffer[Map[String, AnyRef]]()
       while (rows.hasNext) {
         items.append(_createFieldMapFrom(rows.next()))
       }
@@ -93,7 +94,7 @@ class Fetcher(node: String, port: Int, keyspace: String, tablePrefix: String) ex
 
       val rows = result.all().iterator()
 
-      var items: ListBuffer[Map[String, AnyRef]] = scala.collection.mutable.ListBuffer[Map[String, AnyRef]]()
+      val items: ListBuffer[Map[String, AnyRef]] = scala.collection.mutable.ListBuffer[Map[String, AnyRef]]()
       while (rows.hasNext) {
         items.append(_createFieldMapFrom(rows.next()))
       }
@@ -116,7 +117,7 @@ class Fetcher(node: String, port: Int, keyspace: String, tablePrefix: String) ex
 
       val rows = result.all().iterator()
 
-      var items: ListBuffer[Map[String, AnyRef]] = scala.collection.mutable.ListBuffer[Map[String, AnyRef]]()
+      val items: ListBuffer[Map[String, AnyRef]] = scala.collection.mutable.ListBuffer[Map[String, AnyRef]]()
       while (rows.hasNext) {
         items.append(_createFieldMapFrom(rows.next()))
       }
@@ -133,17 +134,17 @@ class Fetcher(node: String, port: Int, keyspace: String, tablePrefix: String) ex
   private def _createFieldMapFrom(row: Row): Map[String, AnyRef] = {
     var map = Map[String, AnyRef]()
 
-    row.getColumnDefinitions.asList().forEach {
+    row.getColumnDefinitions.forEach {
       cd =>
-        val columnName = cd.getName
-        val columnType = cd.getType.getName.toString.toUpperCase()
+        val columnName = cd.getName.toString
+        val columnType = cd.getType.toString.toUpperCase() // TODO: check
 
-        var fieldValue = columnType.toUpperCase match {
+        columnType.toUpperCase match {
           case "TEXT" => map = map + (columnName -> row.getString(columnName))
           case "VARCHAR" => map = map + (columnName -> row.getString(columnName))
           case "INT" => map = map + (columnName -> Int.box(row.getInt(columnName)))
-          case "BOOLEAN" => map = map + (columnName -> Boolean.box(row.getBool(columnName)))
-          case "TIMESTAMP" => map = map + (columnName -> new DateTime(row.getTimestamp(columnName)))
+          case "BOOLEAN" => map = map + (columnName -> Boolean.box(row.getBoolean(columnName)))
+          case "TIMESTAMP" => map = map + (columnName -> new DateTime(row.getString(columnName))) // TODO: convert to timestamp
           case "DOUBLE" => map = map + (columnName -> Double.box(row.getDouble(columnName)))
           case x => LOG.warn("Unknown column type: " + columnType)
         }

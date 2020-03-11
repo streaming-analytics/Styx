@@ -1,20 +1,24 @@
 package ai.styx.frameworks.cassandra
 
+import java.net.InetSocketAddress
+
 import ai.styx.common.Logging
-import com.datastax.driver.core.{Cluster, Session}
+import com.datastax.oss.driver.api.core.session.Session
+import com.datastax.oss.driver.api.core.CqlSession
 
 class CassandraConnector extends Logging {
   private var connected: Boolean = false
-  private var cluster: Cluster = _
-  private var session: Session = _
+  //private var cluster: Cluster = _
+  private var session: CqlSession = _
 
-  def connect(node: String, port: Option[Int] = None, keyspace: String = "hypstar"): Unit = {
+  def connect(node: String, port: Option[Int] = None, keyspace: String = "Styx"): Unit = {
     try {
       LOG.info("Connecting to Cassandra...")
-      val builder = Cluster.builder().addContactPoint(node)
-      if (port.isDefined) builder.withPort(port.get)
-      cluster = builder.build()
-      session = cluster.connect(keyspace)
+      val endPoint = InetSocketAddress.createUnresolved(node, port.getOrElse(9042))
+      val builder = CqlSession.builder().addContactPoint(endPoint)
+      //val builder = Cluster.builder().addContactPoint(node)
+      //cluster = builder.build()
+      session = builder.build() //cluster.connect(keyspace)
       connected = true
       LOG.info(s"Connected to Cassandra keyspace $keyspace on node $node")
     }
@@ -24,7 +28,7 @@ class CassandraConnector extends Logging {
     }
   }
 
-  def getSession: Session = {
+  def getSession: CqlSession = {
     LOG.info("Getting Cassandra session...")
     if (!connected) throw new Exception("Make a connection first")
     session
@@ -34,7 +38,7 @@ class CassandraConnector extends Logging {
     LOG.info("Closing Cassandra session...")
     if (!connected) throw new Exception("Make a connection first")
     session.close()
-    cluster.close()
+    // cluster.close()
     connected = false
   }
 }
