@@ -4,14 +4,13 @@ import java.util.concurrent.Executors
 
 import ai.styx.common.Logging
 import com.typesafe.config.Config
-import org.apache.flink.api.common.JobID
-import org.apache.flink.configuration.{ConfigConstants, Configuration, HighAvailabilityOptions, TaskManagerOptions}
-import org.apache.flink.runtime.instance.{ActorGateway, AkkaActorGateway}
-import org.apache.flink.runtime.jobgraph.{JobGraph, JobStatus}
+import org.apache.flink.api.common.{JobID, JobStatus}
+import org.apache.flink.configuration.{ConfigConstants, Configuration, HighAvailabilityOptions}
+import org.apache.flink.runtime.jobgraph.JobGraph
+import org.apache.flink.runtime.messages.Acknowledge
 import org.apache.flink.runtime.minicluster.{MiniCluster, MiniClusterConfiguration, RpcServiceSharing}
 import org.scalatest.{BeforeAndAfterAll, Suite}
 import org.apache.flink.streaming.util.TestStreamEnvironment
-import org.apache.flink.test.util.TestBaseUtils
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
@@ -19,11 +18,9 @@ import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 trait EmbeddedFlink extends BeforeAndAfterAll {
   this: Suite =>
 
-  def jobToBeDeployed: Any // StyxJob
+  def jobToBeDeployed: JobGraph
 
   def jobName: String = this.getClass.getName
-
-  def jobId: JobID = new JobID()
 
   def jobConfigPrefix: String
 
@@ -32,12 +29,12 @@ trait EmbeddedFlink extends BeforeAndAfterAll {
   override def beforeAll(): Unit = {
     super.beforeAll()
     EmbeddedFlink.ensureStarted()
-    EmbeddedFlink.deployJob(jobToBeDeployed, config, jobConfigPrefix, jobId)
+    EmbeddedFlink.deployJob(jobToBeDeployed: JobGraph, config, jobConfigPrefix)
   }
 
   override def afterAll(): Unit = {
     super.afterAll()
-    EmbeddedFlink.cluster.cancelJob(jobId) //.jobStatusGateway.cancelJob(jobName, 5 seconds)
+    EmbeddedFlink.cluster.cancelJob(jobToBeDeployed.getJobID)
     EmbeddedFlink.stopCluster()
   }
 }
@@ -53,10 +50,6 @@ object EmbeddedFlink extends Logging {
   val timeout: FiniteDuration = 1000 seconds  //TestBaseUtils.DEFAULT_TIMEOUT
 
   lazy val cluster: MiniCluster = startCluster()
-
-  //def leaderGateway() = new AkkaActorGateway()
-
-  //lazy val jobStatusGateway = new JobStatusGateway(leaderGateway())
 
   def startCluster(): MiniCluster = {
     val numTaskManagers = 1
@@ -85,14 +78,13 @@ object EmbeddedFlink extends Logging {
     cluster.closeAsync()
   }
 
-  def deployJob(job: Any, config: Config, jobConfigPrefix: String, jobID: JobID): Unit = {
+  def deployJob(job: JobGraph, config: Config, jobConfigPrefix: String): Unit = {
     Future {
-      cluster.submitJob(new JobGraph())
-      //job.run(config, Some(jobName))
+      cluster.submitJob(job)
     }
     val inputTopic: String = config.getString(jobConfigPrefix + ".read.rawDataTopic")
     val cepName: String = config.getString(jobConfigPrefix + ".name")
-    waitUntilJobIsRunning(jobID)
+    waitUntilJobIsRunning(job.getJobID)
   }
 
   def waitUntilJobIsRunning(jobID: JobID, pollingInterval: Duration = 500 milliseconds, timeout: FiniteDuration = timeout): Unit = {
@@ -103,5 +95,26 @@ object EmbeddedFlink extends Logging {
     }
 
     LOG.info(s"Job $jobID is deployed and running")
+  }
+
+  def verifyKafkaOffsetInitialized(jobId: String, cepName: String, topic: String, flinkWebAddress: String = "localhost:8081"): Boolean = {
+    new FlinkKafkaConsumerOffsetChecker(flinkWebAddress).isInitializedForJob(jobId, cepName, topic)
+  }
+
+  def isJobRunning(jobID: JobID, cepName: String, inputTopic: String, timeout: FiniteDuration): Boolean = {
+    if (getJobStatus(jobID) == JobStatus.RUNNING) {
+      verifyKafkaOffsetInitialized(jobID.toString, cepName, inputTopic)
+    } else false
+  }
+
+  def getJobStatus(jobID: JobID): JobStatus = {
+    cluster.getJobStatus(jobID).get()
+  }
+
+  def cancelJob(jobID: JobID, timeout: FiniteDuration): Unit = {
+    LOG.info(s"Waiting for job cancellation: ${jobID.toString}")
+    val cancelJobFuture = this.cluster.cancelJob(jobID)
+    cancelJobFuture.complete(Acknowledge.get())
+    LOG.info(s"Cancellation for job ${jobID.toString} completed")
   }
 }
