@@ -1,6 +1,7 @@
 package ai.styx.frameworks.cassandra
 
 import ai.styx.frameworks.interfaces.DatabaseFetcher
+import com.datastax.oss.driver.api.core.CqlSession
 import com.datastax.oss.driver.api.core.cql.Row
 // import com.datastax.driver.core.Row
 import org.joda.time.DateTime
@@ -10,7 +11,7 @@ import scala.collection.mutable.ListBuffer
 class Fetcher(node: String, port: Int, keyspace: String, tablePrefix: String) extends DatabaseFetcher {
   val connector = new CassandraConnector()
   connector.connect(node, Some(port), keyspace)
-  val session = connector.getSession
+  val session: CqlSession = connector.getSession
 
   override def getItemCount(tableName: String): Long = {
     try {
@@ -146,7 +147,7 @@ class Fetcher(node: String, port: Int, keyspace: String, tablePrefix: String) ex
           case "BOOLEAN" => map = map + (columnName -> Boolean.box(row.getBoolean(columnName)))
           case "TIMESTAMP" => map = map + (columnName -> new DateTime(row.getString(columnName))) // TODO: convert to timestamp
           case "DOUBLE" => map = map + (columnName -> Double.box(row.getDouble(columnName)))
-          case x => LOG.warn("Unknown column type: " + columnType)
+          case _ => LOG.warn("Unknown column type: " + columnType)
         }
     }
 

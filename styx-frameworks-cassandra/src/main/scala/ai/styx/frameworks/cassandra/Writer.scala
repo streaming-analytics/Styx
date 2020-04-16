@@ -4,7 +4,6 @@ import ai.styx.domain.DomainEntity
 import ai.styx.domain.utils.{Column, ColumnType}
 import ai.styx.frameworks.interfaces.DatabaseWriter
 import com.datastax.oss.driver.api.core.CqlSession
-import com.datastax.oss.driver.api.core.session.Session
 import org.joda.time.DateTime
 
 import scala.util.{Failure, Success, Try}
@@ -90,7 +89,7 @@ class Writer(node: String, port: Int, keyspace: String, tablePrefix: String) ext
 
       val idColumn = Column("id", ColumnType.TEXT)
       items.foreach{item =>
-        query.append(_createInsertQuery(item.get(idColumn).get.toString, item, tableNameWithPrefix))
+        query.append(_createInsertQuery(item(idColumn).toString, item, tableNameWithPrefix))
         query.append("\n")
       }
 
@@ -102,7 +101,7 @@ class Writer(node: String, port: Int, keyspace: String, tablePrefix: String) ext
     } match {
       case Success(_) => Some("OK")
       case Failure(t) => LOG.error("Unable to write batch of items to table " + tableNameWithPrefix, t)
-        return None
+        None
     }
   }
 
@@ -124,7 +123,7 @@ class Writer(node: String, port: Int, keyspace: String, tablePrefix: String) ext
   }
 
   override def putDomainEntity[T <: DomainEntity](tableName: String, entity: T): Option[String] = {
-    val fields = entity.getFields(true, true)
+    val fields = entity.getFields(flatten = true)
 
     var id = entity.getId
     if ((id == null) || id.isEmpty) {
@@ -158,7 +157,7 @@ class Writer(node: String, port: Int, keyspace: String, tablePrefix: String) ext
           case ColumnType.LONG => field._2
           case ColumnType.DOUBLE => field._2
           case ColumnType.BOOLEAN => field._2
-          case ColumnType.TIMESTAMP => {
+          case ColumnType.TIMESTAMP =>
             field._2 match {
               case dt: DateTime => dt.getMillis  // TODO: check
               case l: java.lang.Long => l
@@ -166,7 +165,6 @@ class Writer(node: String, port: Int, keyspace: String, tablePrefix: String) ext
                 LOG.error("Unknown date type in the Timestamp column")
                 x.toString
             }
-          }
         }
     }.mkString(", ")
 
