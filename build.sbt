@@ -2,15 +2,15 @@ import sbt.Keys._
 
 val slf4jV = "1.7.30" // Our logging framework
 val logbackV = "1.2.3" // Our logging implementation
-val jodatimeV = "2.10.5"
+val jodatimeV = "2.10.8"
 val jodaConvertV = "2.2.1"
-val typesafeV = "1.4.0"
-val jacksonV = "3.6.7"
-val scalatestV = "3.1.1"
+val typesafeV = "1.4.1"
+val jacksonV = "3.6.10"
+val scalatestV = "3.2.3"
 val circeV = "0.11.1"
 val flinkV = "1.10.0"
 val flinkKafkaV = "0.11"
-val cassandraV = "3.11.6"
+val cassandraV = "3.11.9"
 val cassandraDriverV = "4.0.0"
 val cassandraUnitV = "4.3.1.0"
 val kafkaV = "2.5.0"
