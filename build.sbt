@@ -2,11 +2,11 @@ import sbt.Keys._
 
 val slf4jV = "1.7.30" // Our logging framework
 val logbackV = "1.2.3" // Our logging implementation
-val jodatimeV = "2.10.8"
+val jodatimeV = "2.10.10"
 val jodaConvertV = "2.2.1"
 val typesafeV = "1.4.1"
-val jacksonV = "3.6.10"
-val scalatestV = "3.2.3"
+val jacksonV = "3.6.11"
+val scalatestV = "3.2.6"
 val circeV = "0.11.1"
 val flinkV = "1.10.0"
 val flinkKafkaV = "0.11"
@@ -25,8 +25,8 @@ val ow2V = "5.0.3"
 lazy val commonSettings = Seq(
   organization := "github.com/streaming-analytics",
   version := "0.1",
-  scalaVersion := "2.13.3",
-  sbtVersion := "1.4.2",
+  scalaVersion := "2.12.13",
+  sbtVersion := "1.4.9",
   crossPaths := false,
   scalacOptions := Seq(
     "-encoding", "utf8",
