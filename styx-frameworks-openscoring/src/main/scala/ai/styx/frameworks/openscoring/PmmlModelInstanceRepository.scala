@@ -49,7 +49,7 @@ class PmmlModelInstanceRepository(modelRepository: ModelRepository) extends Logg
     val pmml = org.jpmml.model.PMMLUtil.unmarshal(stream)
     LOG.info("PMML model loaded: " + m.Name)
 
-    val modelEvaluator: ModelEvaluator[_ <: Model] = modelEvaluatorFactory.newModelEvaluator(pmml)
+    val modelEvaluator = modelEvaluatorFactory.newModelEvaluator(pmml)
     modelEvaluator.verify()
 
     LOG.info("PMML model verified!")

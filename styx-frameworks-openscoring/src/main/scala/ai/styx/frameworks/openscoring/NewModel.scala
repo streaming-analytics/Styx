@@ -4,12 +4,12 @@ import java.util
 
 import ai.styx.common.Logging
 import ai.styx.domain.Customer
-import org.dmg.pmml.{DataField, FieldName, Model}
+import org.dmg.pmml.{DataField, FieldName}
 import org.jpmml.evaluator._
 
 import scala.collection.JavaConverters._
 
-class NewModel(pmmlModel: ModelEvaluator[_ <: Model]) extends Logging {
+class NewModel(pmmlModel: ModelEvaluator[_]) extends Logging {
   def score(customer: Customer): Double = {
 
     val arguments = new util.LinkedHashMap[FieldName, FieldValue]

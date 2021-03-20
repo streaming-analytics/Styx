@@ -10,7 +10,7 @@ import org.jpmml.evaluator._
 
 import scala.collection.JavaConverters._
 
-class PmmlModelInstance(pmmlModel: ModelEvaluator[_ <: Model]) extends ModelInstance with Logging {
+class PmmlModelInstance(pmmlModel: ModelEvaluator[_]) extends ModelInstance with Logging {
 
   def score(customer: Customer): Double = {
 

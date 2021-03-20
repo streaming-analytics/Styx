@@ -1,7 +1,5 @@
 package ai.styx.usecases.shopping
 
-import ai.styx.usecases.interfaces.MachineLearningFunction
-
-class MachineLearningFunction extends MachineLearningFunction {
+class MachineLearningFunction extends ai.styx.usecases.interfaces.MachineLearningFunction {
   // TODO
 }

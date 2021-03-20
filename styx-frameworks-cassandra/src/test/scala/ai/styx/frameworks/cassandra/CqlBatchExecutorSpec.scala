@@ -18,11 +18,11 @@ class CqlBatchExecutorSpec extends BaseSpec {
     TimedResult((t1 - t0) nanoseconds, result)
   }
 
-  def singleWait = 75 milliseconds
+  def singleWait: FiniteDuration = 75 milliseconds
 
   // The Await's were timing out when coverage instrumentation was added, or when buildserver was 'slow'.
   // This corrects all delays by that slowness
-  def testEnvironmentalDelay =
+  def testEnvironmentalDelay: Duration =
   (0 until 10)
     .par
     .map(_ =>

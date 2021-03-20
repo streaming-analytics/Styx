@@ -12,6 +12,6 @@ class CepFunction extends ai.styx.usecases.interfaces.CepFunction[BaseTransactio
   }
 
   override def createBusinessEvent(transaction: BaseTransactionEvent): BasePatternEvent = {
-    new BasePatternEvent(transaction.topic, transaction.eventTime, "Test1", transaction.payload)
+    BasePatternEvent(transaction.topic, transaction.eventTime, "Test1", transaction.payload)
   }
 }
