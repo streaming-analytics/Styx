@@ -29,18 +29,6 @@ object StyxFraudDetectionJob extends App with Logging {
   val rawEventsStream = env
     .addSource(KafkaFactory.createMessageBusConsumer(config).asInstanceOf[KafkaStringConsumer])
 
-  ///// Part 1: CEP --> check for unusual transaction counts per hour
-//  val businessEventsStream = rawEventsStream
-//    .map(s => Transaction.fromString(s))
-//    .assignTimestampsAndWatermarks(new TransactionTimestampAndWatermarkGenerator())
-    //.keyBy(t => t.customerId)  // group by customer
-    //.countWindowAll(1000L)  // count the transactions per second
-
-  ///// Part 2: ML --> compare the transactions to customer context
-  //val notificationsEventsStream = businessEventsStream
-
-  //notificationsEventsStream.addSink(transaction => LOG.info(transaction.description))
-
   // part 1: just log it
   val transactionStream = rawEventsStream.map(s => Transaction.fromString(s))
   // transactionStream.addSink(transaction => LOG.info(s"Received transaction of ${transaction.amount} ${transaction.currency} from ${transaction.customerId} to ${transaction.counterAccount} at time ${transaction.time}, description: ${transaction.description}"))
@@ -50,7 +38,14 @@ object StyxFraudDetectionJob extends App with Logging {
   largeAmountsStream.addSink(transaction => LOG.info(s"Found suspicious transaction of ${transaction.amount} ${transaction.currency} from ${transaction.customerId} to ${transaction.counterAccount} at time ${transaction.time}, description: ${transaction.description}"))
 
   // part 3: key by customer
-  //transactionStream.keyBy(t => t.customerId)
+  // transactionStream.assignTimestampsAndWatermarks(new TransactionTimestampAndWatermarkGenerator())
+  // transactionStream.keyBy(t => t.customerId)
+
+  // part 4: CEP --> check for unusual transaction counts per hour
+  // .countWindowAll(1000L)  // count the transactions per second
+
+  // part 5: ML --> compare the transactions to customer context
+  // val notificationsEventsStream = businessEventsStream
 
   env.execute("Fraud detection")
 

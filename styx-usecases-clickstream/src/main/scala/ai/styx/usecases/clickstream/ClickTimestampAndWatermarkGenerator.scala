@@ -17,7 +17,7 @@ class ClickTimestampAndWatermarkGenerator extends AssignerWithPeriodicWatermarks
   override def extractTimestamp(click: Click, previousElementTimestamp: Long): Long = {
     // format: 2017-07-01 01:11:12.634
     try {
-      val timestamp = DateTime.parse(click.collector_tstamp, DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS").withLocale(Locale.ENGLISH)).getMillis
+      val timestamp = DateTime.parse(click.raw_timestamp, DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS").withLocale(Locale.ENGLISH)).getMillis
       currentMaxTimestamp = Math.max(timestamp, currentMaxTimestamp)
       timestamp
     }
