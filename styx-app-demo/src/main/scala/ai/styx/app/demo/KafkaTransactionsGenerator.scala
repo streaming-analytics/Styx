@@ -31,7 +31,7 @@ object KafkaTransactionsGenerator extends App with Logging {
     producer.send(topic, t)
 
     Thread.sleep(10)  // 100 per second
-    LOG.info(s"Send transaction to topic $topic: " + t)
+    LOG.debug(s"Send transaction to topic $topic: " + t)
   }
 
   producer.close(1000L, TimeUnit.MILLISECONDS)
