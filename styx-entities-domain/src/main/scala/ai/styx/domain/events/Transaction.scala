@@ -33,7 +33,7 @@ case class Transaction(
 
                         @BeanProperty
                         @JsonProperty("location")
-                        location: String = null,
+                        location: String = null,  // TODO: lat/long
 
                         @BeanProperty
                         @JsonProperty("customer_id")

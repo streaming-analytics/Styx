@@ -16,13 +16,18 @@ object KafkaTransactionsGenerator extends App with Logging {
 
   val producer: KafkaStringProducer = KafkaFactory.createStringProducer(config.kafkaProducerProperties).asInstanceOf[KafkaStringProducer]
 
-  while (true) {
-    val now = new Timestamp(System.currentTimeMillis())
-    val customerId = "Customer-" + Random.nextInt(10).toString
-    val amount = Random.nextDouble() * Random.nextInt(1000)  // TODO: add negatives
-    val counterAccount = "Customer-" + Random.nextInt(10).toString
+  val currency = "EURO"
+  val location = "unknown"
 
-    val t = Transaction(now, "description", amount, "EURO", "somewhere", customerId, counterAccount).toJson()
+  while (true) {
+    val eventTime = new Timestamp(System.currentTimeMillis() - Random.nextInt(100))  // the event happened 0-100 ms in the past (for event time demo)
+
+    val customerId = "Customer-" + Random.nextInt(100).toString  // simulate the data of 100 customers
+    val amount = Random.nextDouble() * Random.nextInt(1000) * (if (Random.nextBoolean()) -1 else 1) * (if (Random.nextInt(1000) == 1) 1000 else 1)
+    val counterAccount = "Company-" + Random.nextInt(1000).toString  // simulate 1000 companies to pay / get money from
+    val description = Random.alphanumeric.take(10).mkString("")
+
+    val t = Transaction(eventTime, description, amount, currency, location, customerId, counterAccount).toJson()
     producer.send(topic, t)
 
     Thread.sleep(10)  // 100 per second
