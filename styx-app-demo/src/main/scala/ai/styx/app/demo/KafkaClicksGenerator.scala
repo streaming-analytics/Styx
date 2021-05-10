@@ -1,6 +1,5 @@
 package ai.styx.app.demo
 
-import ai.styx.app.demo.KafkaTransactionsGenerator.LOG
 import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.Click
 import ai.styx.frameworks.kafka.{KafkaFactory, KafkaStringProducer}
@@ -35,7 +34,7 @@ object KafkaClicksGenerator extends App with Logging {
     producer.send(topic, c)
 
     Thread.sleep(1000)  // 100 per second
-    LOG.debug(s"Send click to topic $topic: " + c)
+    LOG.info(s"Send click to topic $topic: " + c)
   }
 
   producer.close(1000L, TimeUnit.MILLISECONDS)

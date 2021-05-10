@@ -44,7 +44,7 @@ object StyxClickstreamAnalysisJob extends App with Logging {
 
   // part 1: just log it
   val clickStream = rawEventsStream.map(s => Click.fromString(s))
-  clickStream.filter(_ != null).addSink(click => LOG.info(s"URL: ${click.raw_url} "))
+  clickStream.filter(_ != null).addSink(click => LOG.info(s"URL: ${click.raw_url}"))
 
 
   //

@@ -30,7 +30,7 @@ case class Click (
   }
 
   override def toString: String = {
-    s"${raw_timestamp};${raw_user_id};${raw_url};${raw_ip};${raw_timezone};${raw_country};${rich_city};${rich_latitude};${rich_longitude};${rich_device};${rich_os_family};${rich_session_id}"
+    s"${raw_timestamp};${raw_user_id};${raw_url};${raw_ip};${raw_timezone};${raw_country};${raw_user_agent};${rich_city};${rich_latitude};${rich_longitude};${rich_device};${rich_os_family};${rich_session_id}"
   }
 }
 
