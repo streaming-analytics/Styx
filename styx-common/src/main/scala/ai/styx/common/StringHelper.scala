@@ -10,6 +10,12 @@ object StringHelper {
   }
 
   def parseOption(s: String): Option[String] = {
-    if (s == "None") None else Some(s)
+    if (s == "None") None else {
+      if (s.contains("Some(")) {
+        // e.g. Some(value)
+        Some(s.substring(5, s.length - 1))
+      } else
+        Some(s)
+    }
   }
 }

@@ -42,15 +42,20 @@ object StyxClickstreamAnalysisJob extends App with Logging {
     .filter(_.raw_user_id.isDefined)
   // loggedInCustomersStream.addSink(click => LOG.info(s"Customer: ${click.raw_user_id.get}, URL: ${click.raw_url}"))
 
-  // part 3: feature extraction (enrich data)
+  // part 3: enrich data (feature extraction)
   val richStream = loggedInCustomersStream
     .map(click => click.copy(
       rich_page_type = ClickDataEnricher.getPageType(click),
       rich_product_category = ClickDataEnricher.getProductCategory(click)))
-  richStream.addSink(click => LOG.info(s"Customer: ${click.raw_user_id.get}, Page type: ${click.rich_page_type.get}, Category: ${click.rich_product_category.getOrElse("none")}"))
+
+  // richStream.addSink(click => LOG.info(s"Customer: ${click.raw_user_id.get}, Page type: ${click.rich_page_type.get}, Category: ${click.rich_product_category.getOrElse("none")}"))
+
+  // part 4: check how long customers spend on a product page before visiting the cart
+  // normal pattern: home -> search -> pdp (3) -> cart
+
+  richStream.filter(_.raw_user_id.get.endsWith("1")).addSink(click => LOG.info(s"Customer: ${click.raw_user_id.get}, Page type: ${click.rich_page_type.get}, Category: ${click.rich_product_category.getOrElse("none")}"))
 
 
-  // part 4:
 
   //
 //  val stream = env

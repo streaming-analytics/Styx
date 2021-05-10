@@ -23,19 +23,45 @@ object KafkaClicksGenerator extends App with Logging {
   val language = "en-US"
   val categories = List("guitars", "pianos", "amplifiers", "headphones", "sheet_music")
 
+  var previousPage = scala.collection.mutable.Map[String, String]()
+  for (c <- 0 to 9) {
+    previousPage += (s"Customer_$c" -> "none")
+  }
+
   while (true) {
     val eventTime = new DateTime(System.currentTimeMillis() - Random.nextInt(100))  // the event happened 0-100 ms in the past (for event time demo)
 
     val userId = if (Random.nextBoolean()) None else Some("Customer_" + Random.nextInt(10).toString)  // half of the url visits is a customer; simulate the data of 10 customers
 
-    val url = {
-      Random.nextInt(10) match {
-        case 0 => s"$mainUrl/$language/home"  // one in ten URLs is the home page
-        case 1 => s"$mainUrl/$language/search"  // one in ten URLs is a search (TODO: add search string)
-        case 2 => s"$mainUrl/$language/cart"  // one in ten URLs is a cart visit
-        case _ => s"$mainUrl/$language/products/${categories(Random.nextInt(5))}/${Random.nextInt(50000)}" // the rest is product pages
-        }
+    val url: String = if (userId.isDefined) {
+      previousPage(userId.get) match {
+        case "home" =>
+          previousPage(userId.get) = "search"
+          s"$mainUrl/$language/search" // one in ten URLs is a search
+        case "search" =>
+          previousPage(userId.get) = "product_1"
+          s"$mainUrl/$language/products/${categories(Random.nextInt(5))}/${Random.nextInt(50000)}"
+        case "product_1" =>
+          previousPage(userId.get) = "product_2"
+          s"$mainUrl/$language/products/${categories(Random.nextInt(5))}/${Random.nextInt(50000)}"
+        case "product_2" =>
+          previousPage(userId.get) = "product_3"
+          s"$mainUrl/$language/products/${categories(Random.nextInt(5))}/${Random.nextInt(50000)}"
+        case "product_3" =>
+          previousPage(userId.get) = "cart" // after viewing 3 products, go to cart
+          s"$mainUrl/$language/cart"
+        case _ =>  // including "cart"
+          previousPage(userId.get) = "home"
+          s"$mainUrl/$language/home"
       }
+    } else {
+      Random.nextInt(10) match {
+        case 0 => s"$mainUrl/$language/home" // one in ten URLs is the home page
+        case 1 => s"$mainUrl/$language/search" // one in ten URLs is a search
+        case 2 => s"$mainUrl/$language/cart" // one in ten URLs is a cart visit
+        case _ => s"$mainUrl/$language/products/${categories(Random.nextInt(5))}/${Random.nextInt(50000)}" // the rest is product pages
+      }
+    }
 
     val ip = s"${Random.nextInt(256)}.${Random.nextInt(256)}.${Random.nextInt(256)}.${Random.nextInt(256)}"
 
