@@ -1,7 +1,7 @@
 package ai.styx.app.flink
 
 import ai.styx.common.{Configuration, Logging}
-import ai.styx.domain.events.Click
+import ai.styx.domain.events.{Click, ClickDataEnricher}
 import ai.styx.frameworks.kafka.{KafkaFactory, KafkaStringConsumer, KafkaStringProducer}
 import ai.styx.usecases.clickstream.{CategoryCount, CategoryCountWindowFunction, CategorySumWindowFunction, ClickTimestampAndWatermarkGenerator}
 import org.apache.flink.api.common.typeinfo.TypeInformation
@@ -16,12 +16,6 @@ object StyxClickstreamAnalysisJob extends App with Logging {
   val env = StreamExecutionEnvironment.getExecutionEnvironment
   env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 
-//  // load the data
-//  // TODO: refactor, similar as Twitter analysis
-//  val properties = new Properties()
-//  properties.setProperty("bootstrap.servers", config.kafkaConfig.bootstrapServers)
-//  properties.setProperty("group.id", config.kafkaConfig.groupId)
-// groupId
   implicit val typeInfoString: TypeInformation[String] = TypeInformation.of(classOf[String])
   implicit val typeInfoOptionString: TypeInformation[Option[String]] = TypeInformation.of(classOf[Option[String]])
   implicit val typeInfoClick: TypeInformation[Click] = TypeInformation.of(classOf[Click])
@@ -33,6 +27,7 @@ object StyxClickstreamAnalysisJob extends App with Logging {
 
   val producer = KafkaFactory.createStringProducer(config.kafkaProducerProperties).asInstanceOf[KafkaStringProducer]
 
+  // connect to Kafka to get the data stream
   val rawEventsStream = env
     .addSource(KafkaFactory.createMessageBusConsumer(config).asInstanceOf[KafkaStringConsumer])
 
@@ -45,7 +40,17 @@ object StyxClickstreamAnalysisJob extends App with Logging {
     .filter(_.isDefined)
     .map(_.get)
     .filter(_.raw_user_id.isDefined)
-  loggedInCustomersStream.addSink(click => LOG.info(s"Customer: ${click.raw_user_id.get}, URL: ${click.raw_url}"))
+  // loggedInCustomersStream.addSink(click => LOG.info(s"Customer: ${click.raw_user_id.get}, URL: ${click.raw_url}"))
+
+  // part 3: feature extraction (enrich data)
+  val richStream = loggedInCustomersStream
+    .map(click => click.copy(
+      rich_page_type = ClickDataEnricher.getPageType(click),
+      rich_product_category = ClickDataEnricher.getProductCategory(click)))
+  richStream.addSink(click => LOG.info(s"Customer: ${click.raw_user_id.get}, Page type: ${click.rich_page_type.get}, Category: ${click.rich_product_category.getOrElse("none")}"))
+
+
+  // part 4:
 
   //
 //  val stream = env

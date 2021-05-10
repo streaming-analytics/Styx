@@ -34,7 +34,7 @@ object KafkaClicksGenerator extends App with Logging {
         case 0 => s"$mainUrl/$language/home"
         case 1 => s"$mainUrl/$language/search"
         case 2 => s"$mainUrl/$language/cart"
-        case _ => s"$mainUrl/$language/${categories(Random.nextInt(5))}/${Random.nextInt(50000)}"
+        case _ => s"$mainUrl/$language/products/${categories(Random.nextInt(5))}/${Random.nextInt(50000)}"
         }
       }
 
