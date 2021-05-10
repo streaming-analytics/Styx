@@ -8,4 +8,8 @@ object StringHelper {
       case e: Exception => None
     }
   }
+
+  def parseOption(s: String): Option[String] = {
+    if (s == "None") None else Some(s)
+  }
 }

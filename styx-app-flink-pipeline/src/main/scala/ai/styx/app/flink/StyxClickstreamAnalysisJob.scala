@@ -1,20 +1,13 @@
 package ai.styx.app.flink
 
-import ai.styx.app.flink.StyxFraudDetectionJob.{config, env}
-
-import java.util.Properties
 import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.Click
 import ai.styx.frameworks.kafka.{KafkaFactory, KafkaStringConsumer, KafkaStringProducer}
 import ai.styx.usecases.clickstream.{CategoryCount, CategoryCountWindowFunction, CategorySumWindowFunction, ClickTimestampAndWatermarkGenerator}
-import org.apache.flink.api.common.serialization.SimpleStringSchema
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
-import org.apache.flink.streaming.api.windowing.assigners.SlidingEventTimeWindows
-import org.apache.flink.streaming.api.windowing.time.Time
-import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer011
-import org.joda.time.DateTime
+
 
 object StyxClickstreamAnalysisJob extends App with Logging {
   implicit val config: Configuration = Configuration.load()
@@ -29,13 +22,14 @@ object StyxClickstreamAnalysisJob extends App with Logging {
 //  properties.setProperty("bootstrap.servers", config.kafkaConfig.bootstrapServers)
 //  properties.setProperty("group.id", config.kafkaConfig.groupId)
 // groupId
-  implicit val typeInfoString = TypeInformation.of(classOf[String])
-  implicit val typeInfoOptionString = TypeInformation.of(classOf[Option[String]])
-  implicit val typeInfoClick = TypeInformation.of(classOf[Click])
-  implicit val typeInfoClickInt = TypeInformation.of(classOf[(Click, Int)])
-  implicit val typeInfoStringInt = TypeInformation.of(classOf[(String, Int)])
-  implicit val typeInfoCategoryCount = TypeInformation.of(classOf[CategoryCount])
-  implicit val typeInfoListString = TypeInformation.of(classOf[List[CategoryCount]])
+  implicit val typeInfoString: TypeInformation[String] = TypeInformation.of(classOf[String])
+  implicit val typeInfoOptionString: TypeInformation[Option[String]] = TypeInformation.of(classOf[Option[String]])
+  implicit val typeInfoClick: TypeInformation[Click] = TypeInformation.of(classOf[Click])
+  implicit val typeInfoOptionClick: TypeInformation[Option[Click]] = TypeInformation.of(classOf[Option[Click]])
+  implicit val typeInfoClickInt: TypeInformation[(Click, Int)] = TypeInformation.of(classOf[(Click, Int)])
+  implicit val typeInfoStringInt: TypeInformation[(String, Int)] = TypeInformation.of(classOf[(String, Int)])
+  implicit val typeInfoCategoryCount: TypeInformation[CategoryCount] = TypeInformation.of(classOf[CategoryCount])
+  implicit val typeInfoListString: TypeInformation[List[CategoryCount]] = TypeInformation.of(classOf[List[CategoryCount]])
 
   val producer = KafkaFactory.createStringProducer(config.kafkaProducerProperties).asInstanceOf[KafkaStringProducer]
 
@@ -44,8 +38,14 @@ object StyxClickstreamAnalysisJob extends App with Logging {
 
   // part 1: just log it
   val clickStream = rawEventsStream.map(s => Click.fromString(s))
-  clickStream.filter(_ != null).addSink(click => LOG.info(s"URL: ${click.raw_url}"))
+  // clickStream.addSink(click => LOG.info(s"CLICK -> URL: ${click.get.raw_url}"))
 
+  // part 2: filter the customers
+  val loggedInCustomersStream = clickStream
+    .filter(_.isDefined)
+    .map(_.get)
+    .filter(_.raw_user_id.isDefined)
+  loggedInCustomersStream.addSink(click => LOG.info(s"Customer: ${click.raw_user_id.get}, URL: ${click.raw_url}"))
 
   //
 //  val stream = env
