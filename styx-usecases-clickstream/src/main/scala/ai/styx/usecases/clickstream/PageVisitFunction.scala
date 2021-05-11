@@ -2,16 +2,12 @@ package ai.styx.usecases.clickstream
 
 import ai.styx.common.Logging
 import ai.styx.domain.events.Click
-import org.apache.flink.api.common.functions.RichFlatMapFunction
 import org.apache.flink.api.common.state.{ValueState, ValueStateDescriptor}
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.KeyedProcessFunction
 import org.apache.flink.util.Collector
-import org.joda.time.DateTime
-import org.joda.time.format.DateTimeFormat
 
-import java.util.Locale
 
 class PageVisitFunction extends KeyedProcessFunction[String, Click, (Click, Click, Long)] with Logging {
   val typeInfo: TypeInformation[(Click, Click, Long)] = TypeInformation.of(classOf[(Click, Click, Long)])
@@ -39,7 +35,6 @@ class PageVisitFunction extends KeyedProcessFunction[String, Click, (Click, Clic
 
     val previousPage = currentAndPreviousPage.value()._1
     val previousTimestamp = currentAndPreviousPage.value()._3
-      // DateTime.parse(currentAndPreviousPage.value()._1.raw_timestamp, DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss.SSS").withLocale(Locale.ENGLISH))
     val diff = currentTimestamp - previousTimestamp
 
     if (page == "cart") {

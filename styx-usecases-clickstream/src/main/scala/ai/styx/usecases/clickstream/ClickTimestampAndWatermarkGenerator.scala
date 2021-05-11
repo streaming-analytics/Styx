@@ -11,7 +11,7 @@ import org.joda.time.format.DateTimeFormat
 
 class ClickTimestampAndWatermarkGenerator extends AssignerWithPeriodicWatermarks[Click] with Logging {
 
-  val maxOutOfOrderness = 1000 // ms
+  val maxOutOfOrderness = 100 // ms
   var currentMaxTimestamp: Long = 0L
 
   override def extractTimestamp(click: Click, previousElementTimestamp: Long): Long = {

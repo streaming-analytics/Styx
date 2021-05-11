@@ -6,7 +6,7 @@ import ai.styx.frameworks.kafka.{KafkaFactory, KafkaStringConsumer}
 import ai.styx.usecases.clickstream.{ClickTimestampAndWatermarkGenerator, CustomerSessionProcessWindowFunction, PageVisitFunction}
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.scala.{StreamExecutionEnvironment, createTypeInformation}
-import org.apache.flink.streaming.api.windowing.assigners.EventTimeSessionWindows
+import org.apache.flink.streaming.api.windowing.assigners.{EventTimeSessionWindows, ProcessingTimeSessionWindows}
 import org.apache.flink.streaming.api.windowing.time.Time
 
 object StyxClickstreamAnalysisJob extends App with Logging {
@@ -48,25 +48,22 @@ object StyxClickstreamAnalysisJob extends App with Logging {
   val keyedStream = richStream
     .keyBy(click => click.raw_user_id.get)
 
-  //val checkPrevious = keyedStream.flatMap(new PageVisitFunction())
-  // checkPrevious.addSink(s => LOG.info(s"Cart visit, customer ${s._1.raw_user_id.get} spend ${s._3} ms on product page"))
-
-  //  val checkPrevious = keyedStream
-  //    .process(new PageVisitFunction())
-  //    .addSink(s => LOG.info(s"Cart visit, customer ${s._1.raw_user_id.get} was at ${s._3} ms on product page"))
+  // val checkPrevious = keyedStream
+    // .process(new PageVisitFunction())
+    // .addSink(s => LOG.info(s"Cart visit, customer ${s._1.raw_user_id.get} was at ${s._3} ms on product page"))
 
   // part 5: windows -> show that with event time, order is preserved correctly
-  // session window from 'home' to 'cart' (normally login to logout)
+  // session window with a maximum gap of 800 ms
   // count the number of products customer has seen before viewing the cart
   // processing time: order could be wrong, so 0 products is possible
   // event time: order is correct, so 3 products are always visible
 
   val windowedKeyedStream = richStream
     .assignTimestampsAndWatermarks(new ClickTimestampAndWatermarkGenerator())
-    //.keyBy(click => click.raw_user_id.get)
     .keyBy(click => click.raw_ip)
-    .window(EventTimeSessionWindows.withGap(Time.seconds(5)))
-    .allowedLateness(Time.seconds(2))
+    // .window(ProcessingTimeSessionWindows.withGap(Time.milliseconds(800)))  // this will lead to incorrect counts
+    .window(EventTimeSessionWindows.withGap(Time.milliseconds(800)))
+    .allowedLateness(Time.milliseconds(100))
     .process(new CustomerSessionProcessWindowFunction())
     .addSink(s => LOG.info(s))
 

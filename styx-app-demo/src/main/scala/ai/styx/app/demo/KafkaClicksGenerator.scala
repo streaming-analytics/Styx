@@ -13,7 +13,7 @@ import scala.util.Random
 
 object KafkaClicksGenerator extends App with Logging {
   val BATCH_SIZE = 10
-  val NUMBER_CUSTOMERS = 10
+  val NUMBER_CUSTOMERS = 5
 
   lazy val config: Configuration = Configuration.load()
   val topic: String = "clicks"
@@ -69,16 +69,15 @@ object KafkaClicksGenerator extends App with Logging {
         clicks ++= simulateSession(None)
         clicks ++= simulateSession(Some(s"Customer_$customer"))
       }
-
-      Thread.sleep(100) // to set correct event time --> remove bec of delta?
     }
 
     // clicks.foreach(LOG.info(_))
 
     LOG.info(s"Sending batch of ${BATCH_SIZE} sessions for ${NUMBER_CUSTOMERS} customers, ${clicks.length} clicks in total...")
-    Random.shuffle(clicks).foreach(click => producer.send(topic, click))
-
-    Thread.sleep(1000)  // write 1 batch per second to Kafka
+    Random.shuffle(clicks).foreach{click => {
+      producer.send(topic, click)
+      Thread.sleep(Random.nextInt(1000) / NUMBER_CUSTOMERS / BATCH_SIZE / 2)
+    }}
   }
 
   producer.close(1000L, TimeUnit.MILLISECONDS)
