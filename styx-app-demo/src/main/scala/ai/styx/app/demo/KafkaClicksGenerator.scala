@@ -12,7 +12,8 @@ import scala.collection.mutable.ListBuffer
 import scala.util.Random
 
 object KafkaClicksGenerator extends App with Logging {
-  val BATCH_SIZE = 100
+  val BATCH_SIZE = 10
+  val NUMBER_CUSTOMERS = 10
 
   lazy val config: Configuration = Configuration.load()
   val topic: String = "clicks"
@@ -25,75 +26,59 @@ object KafkaClicksGenerator extends App with Logging {
   val language = "en-US"
   val categories = List("guitars", "pianos", "amplifiers", "headphones", "sheet_music")
 
-  var previousPage = scala.collection.mutable.Map[String, String]()
-  for (c <- 0 to 9) {
-    previousPage += (s"Customer_$c" -> "none")
+  def createClick(delta: Int, ip: String, userId: Option[String], pageType: String, userAgent: String): String =
+    Click(
+      new DateTime(System.currentTimeMillis() - delta).toString("yyyy-MM-dd HH:mm:ss.SSS"),
+      userId,
+      s"$mainUrl/$language/$pageType",
+      ip,
+      "UTC+01",
+      "UK",
+      userAgent,
+      None, None, None, None, None, None
+    ).toString
+
+  def simulateSession(userId: Option[String]): List[String] = {
+    // simulate a series of clicks (page views) for 1 user
+    val clicks = ListBuffer[String]()
+
+    // session_id
+    val ip = s"${Random.nextInt(256)}.${Random.nextInt(256)}.${Random.nextInt(256)}.${Random.nextInt(256)}"
+
+    val userAgent = RandomUserAgent.getRandomUserAgent
+
+    clicks += createClick(90, ip, userId, "login", userAgent)
+    clicks += createClick(80, ip, userId, "home", userAgent)
+    clicks += createClick(70, ip, userId, "search", userAgent)
+    clicks += createClick(60, ip, userId, s"products/${categories(Random.nextInt(5))}/${Random.nextInt(50000)}", userAgent)
+    clicks += createClick(50, ip, userId, s"products/${categories(Random.nextInt(5))}/${Random.nextInt(50000)}", userAgent)
+    clicks += createClick(40, ip, userId, s"products/${categories(Random.nextInt(5))}/${Random.nextInt(50000)}", userAgent)
+    clicks += createClick(30, ip, userId, "cart", userAgent)
+    clicks += createClick(20, ip, userId, "logout", userAgent)
+
+    clicks.toList
   }
 
   while (true) {
-    // we generate blocks of 100 clicks at a time, and send them to Kafka together to randomize processing time.
-    // the event time is in order.
-
+    // we generate blocks of x clicks at a time, and send them to Kafka together to randomize processing time.
     var clicks = ListBuffer[String]()
 
-    for (i <- 0 to BATCH_SIZE) {
-      val eventTime = new DateTime(System.currentTimeMillis())
-
-      // half of the url visits is a customer; simulate the data of 10 customers
-      val userId = if (Random.nextBoolean()) None else Some("Customer_" + Random.nextInt(10).toString)
-
-      val url: String = if (userId.isDefined) {
-        previousPage(userId.get) match {
-          case "home" =>
-            previousPage(userId.get) = "search"
-            s"$mainUrl/$language/search" // one in ten URLs is a search
-          case "search" =>
-            previousPage(userId.get) = "product_1"
-            s"$mainUrl/$language/products/${categories(Random.nextInt(5))}/${Random.nextInt(50000)}"
-          case "product_1" =>
-            previousPage(userId.get) = "product_2"
-            s"$mainUrl/$language/products/${categories(Random.nextInt(5))}/${Random.nextInt(50000)}"
-          case "product_2" =>
-            previousPage(userId.get) = "product_3"
-            s"$mainUrl/$language/products/${categories(Random.nextInt(5))}/${Random.nextInt(50000)}"
-          case "product_3" =>
-            previousPage(userId.get) = "cart" // after viewing 3 products, go to cart
-            s"$mainUrl/$language/cart"
-          case _ => // including "cart"
-            previousPage(userId.get) = "home"
-            s"$mainUrl/$language/home"
-        }
-      } else {
-        Random.nextInt(10) match {
-          case 0 => s"$mainUrl/$language/home" // one in ten URLs is the home page
-          case 1 => s"$mainUrl/$language/search" // one in ten URLs is a search
-          case 2 => s"$mainUrl/$language/cart" // one in ten URLs is a cart visit
-          case _ => s"$mainUrl/$language/products/${categories(Random.nextInt(5))}/${Random.nextInt(50000)}" // the rest is product pages
-        }
+    for (i <- 1 to BATCH_SIZE) {
+      // half of the url visits is a customer; simulate the data of x customers
+      for (customer <- 1 to NUMBER_CUSTOMERS) {
+        clicks ++= simulateSession(None)
+        clicks ++= simulateSession(Some(s"Customer_$customer"))
       }
 
-      val ip = s"${Random.nextInt(256)}.${Random.nextInt(256)}.${Random.nextInt(256)}.${Random.nextInt(256)}"
-
-      clicks += Click(
-        eventTime.toString("yyyy-MM-dd HH:mm:ss.SSS"),
-        userId,
-        url,
-        ip,
-        "UTC+01",
-        "UK",
-        RandomUserAgent.getRandomUserAgent,
-        None, None, None, None, None, None
-      ).toString
-
-      // LOG.info(click)
-
-      Thread.sleep(1) // to set correct event time
+      Thread.sleep(100) // to set correct event time --> remove bec of delta?
     }
 
-    LOG.info(s"Sending batch of ${BATCH_SIZE} clicks...")
+    // clicks.foreach(LOG.info(_))
+
+    LOG.info(s"Sending batch of ${BATCH_SIZE} sessions for ${NUMBER_CUSTOMERS} customers, ${clicks.length} clicks in total...")
     Random.shuffle(clicks).foreach(click => producer.send(topic, click))
 
-    Thread.sleep(1000)  // 1 batch per second
+    Thread.sleep(1000)  // write 1 batch per second to Kafka
   }
 
   producer.close(1000L, TimeUnit.MILLISECONDS)
