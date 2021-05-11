@@ -3,10 +3,11 @@ package ai.styx.app.flink
 import ai.styx.common.{Configuration, Logging}
 import ai.styx.domain.events.{Click, ClickDataEnricher}
 import ai.styx.frameworks.kafka.{KafkaFactory, KafkaStringConsumer, KafkaStringProducer}
-import ai.styx.usecases.clickstream.{CategoryCount, CategoryCountWindowFunction, CategorySumWindowFunction, ClickTimestampAndWatermarkGenerator}
+import ai.styx.usecases.clickstream.{CategoryCount, CategoryCountWindowFunction, CategorySumWindowFunction, ClickTimestampAndWatermarkGenerator, PageVisitFunction}
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.TimeCharacteristic
 import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
+import org.joda.time.DateTime
 
 
 object StyxClickstreamAnalysisJob extends App with Logging {
@@ -22,6 +23,7 @@ object StyxClickstreamAnalysisJob extends App with Logging {
   implicit val typeInfoOptionClick: TypeInformation[Option[Click]] = TypeInformation.of(classOf[Option[Click]])
   implicit val typeInfoClickInt: TypeInformation[(Click, Int)] = TypeInformation.of(classOf[(Click, Int)])
   implicit val typeInfoStringInt: TypeInformation[(String, Int)] = TypeInformation.of(classOf[(String, Int)])
+  implicit val typeInfoStringDateTime: TypeInformation[(String, DateTime)] = TypeInformation.of(classOf[(String, DateTime)])
   implicit val typeInfoCategoryCount: TypeInformation[CategoryCount] = TypeInformation.of(classOf[CategoryCount])
   implicit val typeInfoListString: TypeInformation[List[CategoryCount]] = TypeInformation.of(classOf[List[CategoryCount]])
 
@@ -53,35 +55,25 @@ object StyxClickstreamAnalysisJob extends App with Logging {
   // part 4: check how long customers spend on a product page before visiting the cart
   // normal pattern: home -> search -> pdp (3) -> cart
 
-  richStream.filter(_.raw_user_id.get.endsWith("1")).addSink(click => LOG.info(s"Customer: ${click.raw_user_id.get}, Page type: ${click.rich_page_type.get}, Category: ${click.rich_product_category.getOrElse("none")}"))
+  // richStream.filter(_.raw_user_id.get.endsWith("1")).addSink(click => LOG.info(s"Customer: ${click.raw_user_id.get}, Page type: ${click.rich_page_type.get}, Category: ${click.rich_product_category.getOrElse("none")}"))
+
+  // key by to 'group by' customer
+  val keyedStream = richStream.keyBy(click => click.raw_user_id.get)
+
+  // a. demonstrate that _without_ event time, cart visits can occur before page views
+
+  // The keyed state interfaces provides access to different types of state that are all scoped to the key of the current input element.
+  // --> e.g. the previous page that was visited per customer. We keep a ListState, a list of items: previous page, timestamp of visit
+
+  // .filter(_.raw_user_id.get.endsWith("1"))
+  val checkPrevious = keyedStream.flatMap(new PageVisitFunction())
+  checkPrevious.addSink(s => LOG.info(s"${s._1} ${s._2}"))
 
 
+  // b. demonstrate that with event time, everything is in the correct order
 
-  //
-//  val stream = env
-//    .addSource(new FlinkKafkaConsumer011[String](config.kafkaConfig.rawDataTopic, new SimpleStringSchema(), properties))
-//    .map(Click.fromString(_))
-//    // set event timestamp
-//    .assignTimestampsAndWatermarks(new ClickTimestampAndWatermarkGenerator).name("Getting event time")
-//    .filter(_.category.isDefined)
-//    .map(_.category.get)
-//    .map(s => Tuple2(s, 1)).name("Creating tuples")
-//    // group by word
-//    .keyBy(_._1)
-//    // group by period
-//    .timeWindow(Time.seconds(config.sparkConfig.windowDuration))
-//    // count the words per period
-//    .apply(new CategoryCountWindowFunction()).name("Counting categories")
-//
-//  stream
-//    .windowAll(SlidingEventTimeWindows.of(Time.seconds(config.sparkConfig.windowDuration), Time.seconds(config.sparkConfig.slideDuration.toLong)))
-//    .apply(new CategorySumWindowFunction(10)).name("Top 10 categories per window")
-//    .addSink{listPerPeriod =>
-//      if (listPerPeriod.nonEmpty) {
-//        val dt = new DateTime(listPerPeriod.head.timeStamp)
-//        val s = s"## ============ WINDOW START : ${dt.toString("dd-MM-yyyy hh:mm:sss.SSS")} =========="
-//        LOG.info((s :: listPerPeriod.map(s => f"## Count of ${s.count}%5d : ${s.word}")).mkString("\n"))
-//      }}.name("Printing results")
+  // keyedStream.assignTimestampsAndWatermarks(new ClickTimestampAndWatermarkGenerator())
+
 
   env.execute("clickstream")
 }
