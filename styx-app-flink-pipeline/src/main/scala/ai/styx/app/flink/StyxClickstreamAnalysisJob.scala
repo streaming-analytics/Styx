@@ -47,8 +47,6 @@ object StyxClickstreamAnalysisJob extends App with Logging {
   // part 4: check how long customers spend on a product page before visiting the cart
   // normal pattern: home -> search -> pdp (3) -> cart
 
-  // richStream.filter(_.raw_user_id.get.endsWith("1")).addSink(click => LOG.info(s"Customer: ${click.raw_user_id.get}, Page type: ${click.rich_page_type.get}, Category: ${click.rich_product_category.getOrElse("none")}"))
-
   // key by to 'group by' customer
   val keyedStream = richStream.keyBy(click => click.raw_user_id.get)
 
@@ -56,11 +54,8 @@ object StyxClickstreamAnalysisJob extends App with Logging {
 
   // The keyed state interfaces provides access to different types of state that are all scoped to the key of the current input element.
   // --> e.g. the previous page that was visited per customer.
-
-  // .filter(_.raw_user_id.get.endsWith("1"))
   val checkPrevious = keyedStream.flatMap(new PageVisitFunction())
-  checkPrevious.filter(s => s._1 == "INCORRECT").addSink(s => LOG.info(s"${s._1} ${s._2}"))
-
+  checkPrevious.addSink(s => LOG.info(s"Cart visit, customer ${s._1.raw_user_id.get} spend ${s._3} ms on product page"))
 
   // b. demonstrate that with event time, everything is in the correct order
 

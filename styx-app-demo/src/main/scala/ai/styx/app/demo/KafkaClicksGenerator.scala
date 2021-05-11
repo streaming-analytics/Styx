@@ -12,6 +12,7 @@ import scala.collection.mutable.ListBuffer
 import scala.util.Random
 
 object KafkaClicksGenerator extends App with Logging {
+  val BATCH_SIZE = 100
 
   lazy val config: Configuration = Configuration.load()
   val topic: String = "clicks"
@@ -35,10 +36,11 @@ object KafkaClicksGenerator extends App with Logging {
 
     var clicks = ListBuffer[String]()
 
-    for (i <- 0 to 100) {
+    for (i <- 0 to BATCH_SIZE) {
       val eventTime = new DateTime(System.currentTimeMillis())
 
-      val userId = if (Random.nextBoolean()) None else Some("Customer_1") // + Random.nextInt(10).toString)  // half of the url visits is a customer; simulate the data of 10 customers
+      // half of the url visits is a customer; simulate the data of 10 customers
+      val userId = if (Random.nextBoolean()) None else Some("Customer_" + Random.nextInt(10).toString)
 
       val url: String = if (userId.isDefined) {
         previousPage(userId.get) match {
@@ -85,13 +87,13 @@ object KafkaClicksGenerator extends App with Logging {
 
       // LOG.info(click)
 
-      Thread.sleep(1) // 1000 per second
+      Thread.sleep(1) // to set correct event time
     }
 
-    LOG.info("Sending batch...")
+    LOG.info(s"Sending batch of ${BATCH_SIZE} clicks...")
     Random.shuffle(clicks).foreach(click => producer.send(topic, click))
 
-    Thread.sleep(1000)  // 1 batch (of 1000) per second
+    Thread.sleep(1000)  // 1 batch per second
   }
 
   producer.close(1000L, TimeUnit.MILLISECONDS)
