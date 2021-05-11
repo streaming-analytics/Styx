@@ -6,8 +6,10 @@ import ai.styx.frameworks.kafka.{KafkaFactory, KafkaStringConsumer, KafkaStringP
 import ai.styx.usecases.clickstream.{CategoryCount, CategoryCountWindowFunction, CategorySumWindowFunction, ClickTimestampAndWatermarkGenerator, PageVisitFunction}
 import org.apache.flink.api.common.typeinfo.TypeInformation
 import org.apache.flink.streaming.api.TimeCharacteristic
-import org.apache.flink.streaming.api.scala.StreamExecutionEnvironment
+import org.apache.flink.streaming.api.scala.{StreamExecutionEnvironment, createTypeInformation}
 import org.joda.time.DateTime
+
+import scala.util.Random
 
 
 object StyxClickstreamAnalysisJob extends App with Logging {
@@ -15,17 +17,7 @@ object StyxClickstreamAnalysisJob extends App with Logging {
 
   // set up Flink
   val env = StreamExecutionEnvironment.getExecutionEnvironment
-  env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
-
-  implicit val typeInfoString: TypeInformation[String] = TypeInformation.of(classOf[String])
-  implicit val typeInfoOptionString: TypeInformation[Option[String]] = TypeInformation.of(classOf[Option[String]])
-  implicit val typeInfoClick: TypeInformation[Click] = TypeInformation.of(classOf[Click])
-  implicit val typeInfoOptionClick: TypeInformation[Option[Click]] = TypeInformation.of(classOf[Option[Click]])
-  implicit val typeInfoClickInt: TypeInformation[(Click, Int)] = TypeInformation.of(classOf[(Click, Int)])
-  implicit val typeInfoStringInt: TypeInformation[(String, Int)] = TypeInformation.of(classOf[(String, Int)])
-  implicit val typeInfoStringDateTime: TypeInformation[(String, DateTime)] = TypeInformation.of(classOf[(String, DateTime)])
-  implicit val typeInfoCategoryCount: TypeInformation[CategoryCount] = TypeInformation.of(classOf[CategoryCount])
-  implicit val typeInfoListString: TypeInformation[List[CategoryCount]] = TypeInformation.of(classOf[List[CategoryCount]])
+  // env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 
   val producer = KafkaFactory.createStringProducer(config.kafkaProducerProperties).asInstanceOf[KafkaStringProducer]
 
@@ -63,11 +55,11 @@ object StyxClickstreamAnalysisJob extends App with Logging {
   // a. demonstrate that _without_ event time, cart visits can occur before page views
 
   // The keyed state interfaces provides access to different types of state that are all scoped to the key of the current input element.
-  // --> e.g. the previous page that was visited per customer. We keep a ListState, a list of items: previous page, timestamp of visit
+  // --> e.g. the previous page that was visited per customer.
 
   // .filter(_.raw_user_id.get.endsWith("1"))
   val checkPrevious = keyedStream.flatMap(new PageVisitFunction())
-  checkPrevious.addSink(s => LOG.info(s"${s._1} ${s._2}"))
+  checkPrevious.filter(s => s._1 == "INCORRECT").addSink(s => LOG.info(s"${s._1} ${s._2}"))
 
 
   // b. demonstrate that with event time, everything is in the correct order
