@@ -1,12 +1,12 @@
 import sbt.Keys._
 
-val slf4jV = "1.7.30" // Our logging framework
-val logbackV = "1.2.3" // Our logging implementation
-val jodatimeV = "2.10.10"
-val jodaConvertV = "2.2.1"
+val slf4jV = "1.7.32" // Our logging framework
+val logbackV = "1.2.9" // Our logging implementation
+val jodatimeV = "2.10.13"
+val jodaConvertV = "2.2.2"
 val typesafeV = "1.4.1"
-val jacksonV = "3.6.11"
-val scalatestV = "3.2.8"
+val jacksonV = "4.0.3"
+val scalatestV = "3.2.10"
 val circeV = "0.11.1"
 val flinkV = "1.10.0"
 val flinkKafkaV = "0.11"
@@ -25,7 +25,7 @@ val ow2V = "5.0.3"
 lazy val commonSettings = Seq(
   organization := "github.com/streaming-analytics",
   version := "0.1",
-  scalaVersion := "2.12.13",
+  scalaVersion := "2.13.7",
   sbtVersion := "1.4.9",
   crossPaths := false,
   scalacOptions := Seq(
@@ -148,7 +148,6 @@ lazy val styxFrameworksFlink = (project in file("styx-frameworks-flink"))
   commonSettings,
   name := "styx-frameworks-flink",
   libraryDependencies ++= flinkDependencies)
-// TODO: remove spark, move to new module
 
 lazy val styxFrameworksSpark = (project in file("styx-frameworks-spark"))
   .dependsOn(styxFrameworksInterfaces)
