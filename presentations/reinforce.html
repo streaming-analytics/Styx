@@ -178,18 +178,23 @@
         </section>
 
         <section>
-            <h2>A possible software stack</h2>
+            <h2>A typical software stack</h2>
             <ul>
                 <li>Data stream storage: <b>Kafka</b></li>
-                <li>Cache: NoSQL database, e.g. <b>Cassandra</b> or <b>Ignite</b></li>
+                <li>Cache: <b>Aerospike</b> or <b>Cassandra</b></li>
                 <li>Stream processing: <b>Spark</b> or <b>Flink</b></li>
-                <li>Model scoring: <b>PMML</b> and <b>Openscoring.io</b></li>
+                <li>Model scoring: <b>ONNX</b> or <b>PMML</b></li>
             </ul>
             <aside class="notes">
                 Considerations: latency, throughput, connectivity/integration.<br>
                 All: scalable, mature, fault-tolerant, fast.<br>
                 Spark has caught up with Flink in terms of performance, features, users.
             </aside>
+        </section>
+
+        <section>
+            <h2>Architecture</h2>
+            <img src="img/confluent.png" class="stretch">
         </section>
 
         <section>
@@ -204,7 +209,7 @@
                 <li>Jobs can be deployed as ever-running pieces of software in a big data cluster (Spark, Flink, ...)</li>
                 <li class="fragment" data-fragment-index="1">The basic pattern of a job is:
                     <ul class="fragment" data-fragment-index="1">
-                        <li>Connect to the stream and consume events (<i>ingestion</i>)</li>
+                        <li>Connect to the stream and <i>consume</i> events)</li>
                         <li>If needed, group the events (<i>windowing</i>)</li>
                         <li>Process each event or window (<i>aggregation</i>)</li>
                         <li>Write the results to a data store or stream (<i>sink</i>)</li>
@@ -217,20 +222,12 @@
             <h2>Parallelism</h2>
             <ul>
                 <li>To get high throughput, we have to process the events in parallel</li>
-                <li>Parallelism can be configured on <i>cluster</i> level and on <i>job</i> level (number of worker threads)</li>
+                <li>Parallelism can be configured on <i>cluster</i> level and on <i>job</i> level</li>
+                <li class="fragment" data-fragment-index="1">On cluster level: set the number of task slots (servers)
+                    per job</li>
+                <li class="fragment" data-fragment-index="1">On job level: distribute the data by grouping on a certain
+                    data field</li>
             </ul>
-
-            <pre><code data-trim>
-val conf = new SparkConf()
-.setMaster("local[8]")
-.setAppName("FraudNumberOfTransactions")
-                </code></pre>
-
-            <pre><code data-trim>
-./bin/spark-submit --name "LowMoneyAlert" --master local[4]
---conf "spark.dynamicAllocation.enabled=true"
---conf "spark.dynamicAllocation.maxExecutors=2" styx.jar
-                </code></pre>
         </section>
 
         <section>
@@ -254,7 +251,7 @@ val conf = new SparkConf()
         <section>
             <h2>Out-of-orderness</h2>
             <img src="img/EventTime_StarWars.png" class="stretch" /><br>
-            <img src="img/Star_Wars_logo.png" style="width:200px;" />
+            <img src="img/star-wars.png" style="width:200px;" />
         </section>
 
         <section>
@@ -301,24 +298,69 @@ val conf = new SparkConf()
             <ul>
                 <li><i>Watermarks</i> are timestamps that trigger the computation of the window</li>
                 <li>They are generated at a time that allows a bit of slack for <i>late events</i></li>
-                <!--                    <li class="fragment" data-fragment-index="1">Any event that reaches the processor later-->
-                <!--                        than the watermark, but with an event time that should belong to the former window, is <i>ignored</i></li>-->
-                <!--                    <li class="fragment" data-fragment-index="2">In Flink, it's possible to allow late events to trigger re-computation-->
-                <!--                        of a window by setting the <i>allowedLateness</i> property</li>-->
+                <li class="fragment" data-fragment-index="1">Any event that reaches the processor later
+                    than the watermark, but with an event time that should belong to the former window, is <i>ignored</i></li>
+                <li class="fragment" data-fragment-index="2">In Flink, it's possible to allow late events to trigger re-computation
+                    of a window by setting the <i>allowedLateness</i> property</li>
             </ul>
         </section>
 
-        <!--            <section>-->
-        <!--                <h2>Consistency semantics</h2>-->
-        <!--                <ul>-->
-        <!--                    <li>By configuring offsets, state, and savepointing/checkpointing, a stream processing system can reach a level of robustness:</li>-->
-        <!--                    <ul>-->
-        <!--                        <li><b>At-least-once</b>: guarantees that each event is always processed</li>-->
-        <!--                        <li><b>At-most-once</b>: guarantees that an event is never processed more than once</li>-->
-        <!--                        <li><b>Exactly-once</b>: guarantees that an event is alyways processed once</li>-->
-        <!--                    </ul>-->
-        <!--                </ul>-->
-        <!--            </section>-->
+        <section>
+            <h2>Consistency semantics</h2>
+            <ul>
+                <li>By configuring offsets, state, and savepointing/checkpointing, a stream processing system can reach a level of robustness:</li>
+                <ul>
+                    <li><b>At-least-once</b>: guarantees that each event is always processed</li>
+                    <li><b>At-most-once</b>: guarantees that an event is never processed more than once</li>
+                    <li><b>Exactly-once</b>: guarantees that an event is always processed once</li>
+                </ul>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Exactly-once processing</h2>
+            <ul>
+                <li>An event has three possible statuses:</li>
+                <ul>
+                    <li>Not processed (in cache on the message bus)</li>
+                    <li>In transit (picked up by a job, in a window) = <i>state</i></li>
+                    <li>Processed (handled by the job)</li>
+                </ul>
+                <li class="fragment" data-fragment-index="1">Kafka knows for each consumer which data has been read:
+                    <i>offset</i></li>
+                <li class="fragment" data-fragment-index="1">Flink has <i>checkpoints</i> that allow to replay the
+                    stream in case of failures</li>
+                <li class="fragment" data-fragment-index="1">This combination guarantees that an event goes through
+                    the system <i>exactly once</i></li>
+            </ul>
+            <aside class="notes">
+                Other options for semantics are <b>at-least-once</b> and <b>at-most-once</b> processing
+            </aside>
+        </section>
+
+        <section>
+            <h2>Savepointing and checkpointing</h2>
+            <ul>
+                <li>A <i>checkpoint</i> is a periodic dump to a file on disc of the in-memory state</li>
+            </ul>
+            <pre><code data-trim>
+   env.enableCheckPointing(10000)  // checkpoint every 10 seconds
+                </code></pre>
+            <ul>
+                <li>A <i>savepoint</i> is a manual checkpoint</li>
+                <li>The state dumps can be used for recovery and replay</li>
+            </ul>
+            <pre><code data-trim>
+    # Supported backends: jobmanager, filesystem, rocksdb
+    #
+    state.backend: filesystem
+                </code></pre>
+            <aside class="notes">
+                Trade-off: size of state vs speed of recovery/updates
+            </aside>
+        </section>
+
+        </section>
 
         <section>
             <h2>Model scoring</h2>
@@ -334,10 +376,10 @@ val conf = new SparkConf()
         </section>
 
         <section>
-            <h2>PMML</h2>
+            <h2>Cross-platform model formats</h2>
             <ul>
-                <li>PMML is the glue between data science and data engineering</li>
-                <li>Data scientists can export their machine learning models to PMML (or PFA) format</li>
+                <li>Data scientists can <i>export</i> their machine learning models from Python</li>
+                <li>Popular formats are: ONNX, PMML, and PFA</li>
             </ul>
             <pre><code data-trim>
 from sklearn.linear_model import LogisticRegression
